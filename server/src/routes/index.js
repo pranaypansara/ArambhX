@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRouter from './auth.routes.js';
+import studentRouter from './student.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 
@@ -7,6 +8,9 @@ const router = Router();
 
 // Mount authentication sub-router under /auth
 router.use('/auth', authRouter);
+
+// Mount student sub-router under /students
+router.use('/students', studentRouter);
 
 // Role-Based Access Control (RBAC) testing route
 // Accessible only to authenticated ADMINs
