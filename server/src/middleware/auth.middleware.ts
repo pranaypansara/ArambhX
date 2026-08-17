@@ -1,8 +1,15 @@
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import UserRepository from '../repositories/user.repository.js';
+import { UserPayload } from '../types/auth.types.js';
 
-export const protect = async (req, res, next) => {
-  let token;
+interface DecodedToken {
+  id: number;
+  [key: string]: any;
+}
+
+export const protect = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  let token: string | undefined;
 
   if (
     req.headers.authorization &&
@@ -12,7 +19,7 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Decode and verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretfallback');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretfallback') as DecodedToken;
 
       // Fetch user profile from the database using raw SQL repository
       const user = await UserRepository.findById(decoded.id);
@@ -25,9 +32,9 @@ export const protect = async (req, res, next) => {
       }
 
       // Attach authenticated user information
-      req.user = user;
+      req.user = user as UserPayload;
       next();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Auth Middleware] JWT Verification Error:', error.message);
       return next(error);
     }

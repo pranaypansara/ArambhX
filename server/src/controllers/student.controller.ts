@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from 'express';
 import StudentRepository from '../repositories/student.repository.js';
 import AttendanceRepository from '../repositories/attendance.repository.js';
 import AcademicRepository from '../repositories/academic.repository.js';
@@ -6,7 +7,7 @@ import { studentIdParamSchema, paginationQuerySchema } from '../validators/stude
 // @desc    Create a new student profile
 // @route   POST /api/students
 // @access  Private (ADMIN only)
-export const createStudent = async (req, res, next) => {
+export const createStudent = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { enrollmentNumber, name, email, department, semester } = req.body;
 
@@ -52,7 +53,7 @@ export const createStudent = async (req, res, next) => {
 // @desc    Get all students (with pagination)
 // @route   GET /api/students
 // @access  Private (ADMIN, FACULTY, COUNSELOR)
-export const getAllStudents = async (req, res, next) => {
+export const getAllStudents = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     // Validate pagination query arguments
     const parsedQuery = paginationQuerySchema.parse(req.query);
@@ -83,7 +84,7 @@ export const getAllStudents = async (req, res, next) => {
 // @desc    Get student by ID
 // @route   GET /api/students/:id
 // @access  Private (ADMIN, FACULTY, COUNSELOR)
-export const getStudentById = async (req, res, next) => {
+export const getStudentById = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     // Validate student ID path parameter
     const { id } = studentIdParamSchema.parse(req.params);
@@ -109,7 +110,7 @@ export const getStudentById = async (req, res, next) => {
 // @desc    Update student profile dynamically
 // @route   PATCH /api/students/:id
 // @access  Private (ADMIN only)
-export const updateStudent = async (req, res, next) => {
+export const updateStudent = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { id } = studentIdParamSchema.parse(req.params);
     const fieldsToUpdate = req.body;
@@ -161,7 +162,7 @@ export const updateStudent = async (req, res, next) => {
 // @desc    Delete student profile (triggers cascading deletes)
 // @route   DELETE /api/students/:id
 // @access  Private (ADMIN only)
-export const deleteStudent = async (req, res, next) => {
+export const deleteStudent = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { id } = studentIdParamSchema.parse(req.params);
 
@@ -189,7 +190,7 @@ export const deleteStudent = async (req, res, next) => {
 // @desc    Get student summary (profile + latest attendance & academic record)
 // @route   GET /api/students/:id/summary
 // @access  Private (ADMIN, FACULTY, COUNSELOR)
-export const getStudentSummary = async (req, res, next) => {
+export const getStudentSummary = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
 
@@ -212,7 +213,9 @@ export const getStudentSummary = async (req, res, next) => {
     let formattedAttendance = null;
     if (latestAttendance) {
       formattedAttendance = {
-        attendancePercentage: parseFloat(latestAttendance.attendancePercentage),
+        attendancePercentage: typeof latestAttendance.attendancePercentage === 'number'
+          ? latestAttendance.attendancePercentage
+          : parseFloat(latestAttendance.attendancePercentage),
         recordedAt: latestAttendance.recordedAt
       };
     }
@@ -220,10 +223,16 @@ export const getStudentSummary = async (req, res, next) => {
     let formattedAcademic = null;
     if (latestAcademic) {
       formattedAcademic = {
-        averageMarks: latestAcademic.averageMarks ? parseFloat(latestAcademic.averageMarks) : null,
+        averageMarks: latestAcademic.averageMarks
+          ? (typeof latestAcademic.averageMarks === 'number' ? latestAcademic.averageMarks : parseFloat(latestAcademic.averageMarks as string))
+          : null,
         backlogCount: latestAcademic.backlogCount,
-        assignmentCompletion: latestAcademic.assignmentCompletion ? parseFloat(latestAcademic.assignmentCompletion) : null,
-        lmsActivity: latestAcademic.lmsActivity ? parseFloat(latestAcademic.lmsActivity) : null,
+        assignmentCompletion: latestAcademic.assignmentCompletion
+          ? (typeof latestAcademic.assignmentCompletion === 'number' ? latestAcademic.assignmentCompletion : parseFloat(latestAcademic.assignmentCompletion as string))
+          : null,
+        lmsActivity: latestAcademic.lmsActivity
+          ? (typeof latestAcademic.lmsActivity === 'number' ? latestAcademic.lmsActivity : parseFloat(latestAcademic.lmsActivity as string))
+          : null,
         recordedAt: latestAcademic.recordedAt
       };
     }

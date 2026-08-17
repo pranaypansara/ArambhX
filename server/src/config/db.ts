@@ -11,7 +11,7 @@ if (!connectionString) {
   console.warn('[Database Warning] DATABASE_URL is not defined in environment variables.');
 }
 
-const isNeonDb = connectionString && connectionString.includes('neon.tech');
+const isNeonDb = !!(connectionString && connectionString.includes('neon.tech'));
 
 const pool = new Pool({
   connectionString,
@@ -26,7 +26,7 @@ const pool = new Pool({
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('[Database] Connection failed. Verify DATABASE_URL. Error:', err.message);
-  } else {
+  } else if (res && res.rows[0]) {
     console.log('[Database] Connected successfully to PostgreSQL. Server Time:', res.rows[0].now);
   }
 });

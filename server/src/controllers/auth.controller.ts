@@ -1,19 +1,20 @@
+import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import UserRepository from '../repositories/user.repository.js';
 
-const generateToken = (userId) => {
+const generateToken = (userId: number): string => {
   return jwt.sign(
     { id: userId },
     process.env.JWT_SECRET || 'secretfallback',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
   );
 };
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-export const register = async (req, res, next) => {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -51,7 +52,7 @@ export const register = async (req, res, next) => {
 // @desc    Authenticate user and return JWT
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req, res, next) => {
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { email, password } = req.body;
 
@@ -65,7 +66,7 @@ export const login = async (req, res, next) => {
     }
 
     // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password || '');
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -77,13 +78,17 @@ export const login = async (req, res, next) => {
     const token = generateToken(user.id);
 
     // Prepare safe user object (remove password)
-    const { password: _, created_at, updated_at, ...safeUser } = user;
+    const { password: _, ...safeUser } = user;
+    const userAny = user as any;
     
     // Map database snake_case metadata to camelCase response formatting
     const formattedUser = {
-      ...safeUser,
-      createdAt: user.created_at || user.createdAt,
-      updatedAt: user.updated_at || user.updatedAt
+      id: safeUser.id,
+      name: safeUser.name,
+      email: safeUser.email,
+      role: safeUser.role,
+      createdAt: userAny.created_at || safeUser.createdAt,
+      updatedAt: userAny.updated_at || safeUser.updatedAt
     };
 
     res.status(200).json({
@@ -100,7 +105,7 @@ export const login = async (req, res, next) => {
 // @desc    Get current user profile
 // @route   GET /api/auth/me
 // @access  Private
-export const getCurrentUser = async (req, res, next) => {
+export const getCurrentUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     res.status(200).json({
       success: true,

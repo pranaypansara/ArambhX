@@ -1,8 +1,23 @@
 import pool from '../config/db.js';
+import { AcademicRecord } from '../types/academic.types.js';
 
 class AcademicRepository {
   // Insert a new academic record
-  async create({ studentId, averageMarks, backlogCount, assignmentCompletion, lmsActivity, recordedAt }) {
+  async create({
+    studentId,
+    averageMarks,
+    backlogCount,
+    assignmentCompletion,
+    lmsActivity,
+    recordedAt
+  }: {
+    studentId: number;
+    averageMarks?: number;
+    backlogCount: number;
+    assignmentCompletion?: number;
+    lmsActivity?: number;
+    recordedAt?: string | null;
+  }): Promise<AcademicRecord> {
     const recordedVal = recordedAt ? new Date(recordedAt) : null;
     const query = {
       text: `
@@ -23,11 +38,11 @@ class AcademicRepository {
       values: [studentId, averageMarks, backlogCount, assignmentCompletion, lmsActivity, recordedVal]
     };
     const { rows } = await pool.query(query);
-    return rows[0];
+    return rows[0] as AcademicRecord;
   }
 
   // Find historical records for a student with pagination support
-  async findByStudentId({ studentId, limit, offset }) {
+  async findByStudentId({ studentId, limit, offset }: { studentId: number; limit: number; offset: number }): Promise<AcademicRecord[]> {
     const query = {
       text: `
         SELECT 
@@ -46,11 +61,11 @@ class AcademicRepository {
       values: [studentId, limit, offset]
     };
     const { rows } = await pool.query(query);
-    return rows;
+    return rows as AcademicRecord[];
   }
 
   // Count total records for a student
-  async countByStudentId(studentId) {
+  async countByStudentId(studentId: number): Promise<number> {
     const query = {
       text: 'SELECT COUNT(*) FROM academic_records WHERE student_id = $1;',
       values: [studentId]
@@ -60,7 +75,13 @@ class AcademicRepository {
   }
 
   // Get the single latest academic record
-  async getLatestByStudentId(studentId) {
+  async getLatestByStudentId(studentId: number): Promise<{
+    averageMarks: number | string;
+    backlogCount: number;
+    assignmentCompletion: number | string;
+    lmsActivity: number | string;
+    recordedAt: Date;
+  } | null> {
     const query = {
       text: `
         SELECT 
@@ -77,7 +98,13 @@ class AcademicRepository {
       values: [studentId]
     };
     const { rows } = await pool.query(query);
-    return rows[0] || null;
+    return (rows[0] as {
+      averageMarks: number | string;
+      backlogCount: number;
+      assignmentCompletion: number | string;
+      lmsActivity: number | string;
+      recordedAt: Date;
+    }) || null;
   }
 }
 

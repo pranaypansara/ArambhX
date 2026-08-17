@@ -12,9 +12,9 @@ const server = app.listen(PORT, () => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error(`[Unhandled Rejection] Shutting down due to: ${err.message}`);
-  if (err.stack) {
+process.on('unhandledRejection', (err: any) => {
+  console.error(`[Unhandled Rejection] Shutting down due to: ${err?.message || err}`);
+  if (err?.stack) {
     console.error(err.stack);
   }
   // Gracefully close server & exit process
@@ -24,7 +24,7 @@ process.on('unhandledRejection', (err) => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', (err: Error) => {
   console.error(`[Uncaught Exception] Shutting down due to: ${err.message}`);
   if (err.stack) {
     console.error(err.stack);

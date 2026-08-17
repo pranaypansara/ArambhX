@@ -2,11 +2,73 @@ import check from 'assert';
 
 const BASE_URL = 'http://localhost:5000/api';
 
-async function runTests() {
+interface RegisterResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+interface LoginResponse {
+  success: boolean;
+  message?: string;
+  token?: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+interface StudentResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    id: number;
+    enrollmentNumber: string;
+    name: string;
+    email: string | null;
+    department: string;
+    semester: number;
+  };
+}
+
+interface SummaryResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    student: {
+      id: number;
+      enrollmentNumber: string;
+      name: string;
+      email: string | null;
+      department: string;
+      semester: number;
+    };
+    latestAttendance: {
+      attendancePercentage: number | string;
+      recordedAt: string;
+    } | null;
+    latestAcademicRecord: {
+      averageMarks: number | string | null;
+      backlogCount: number;
+      assignmentCompletion: number | string | null;
+      lmsActivity: number | string | null;
+      recordedAt: string;
+    } | null;
+  };
+}
+
+async function runTests(): Promise<void> {
   console.log('🚀 Starting end-to-end API test with dummy data...\n');
 
   let adminToken = '';
-  let studentId = null;
+  let studentId: number | null = null;
 
   // 1. Register ADMIN user (fails gracefully if duplicate/already exists)
   console.log('1. Registering ADMIN user...');
@@ -20,10 +82,10 @@ async function runTests() {
       role: 'ADMIN'
     })
   });
-  const regResult = await regResponse.json();
+  const regResult = (await regResponse.json()) as RegisterResponse;
   if (regResponse.status === 201) {
     console.log('✅ ADMIN registered successfully!');
-  } else if (regResponse.status === 400 && regResult.message.includes('already exists')) {
+  } else if (regResponse.status === 400 && regResult.message?.includes('already exists')) {
     console.log('ℹ️ ADMIN already exists. Proceeding to login...');
   } else {
     throw new Error(`Registration failed: ${JSON.stringify(regResult)}`);
@@ -39,9 +101,9 @@ async function runTests() {
       password: 'password123'
     })
   });
-  const loginResult = await loginResponse.json();
+  const loginResult = (await loginResponse.json()) as LoginResponse;
   check.strictEqual(loginResponse.status, 200, 'Login should succeed');
-  adminToken = loginResult.token;
+  adminToken = loginResult.token || '';
   console.log('✅ Login successful! Token acquired.');
 
   // 3. Create Student profile
@@ -62,9 +124,9 @@ async function runTests() {
     },
     body: JSON.stringify(studentPayload)
   });
-  const createStudentResult = await createStudentResponse.json();
+  const createStudentResult = (await createStudentResponse.json()) as StudentResponse;
   check.strictEqual(createStudentResponse.status, 201, 'Student creation should succeed');
-  studentId = createStudentResult.data.id;
+  studentId = createStudentResult.data?.id ?? null;
   console.log(`✅ Student created successfully! Database ID: ${studentId}`);
 
   // 4. Test duplicate constraint check
@@ -77,10 +139,14 @@ async function runTests() {
     },
     body: JSON.stringify(studentPayload)
   });
-  const duplicateResult = await duplicateResponse.json();
+  const duplicateResult = (await duplicateResponse.json()) as ApiResponse;
   check.strictEqual(duplicateResponse.status, 400, 'Duplicate request should be rejected');
   check.strictEqual(duplicateResult.success, false);
   console.log(`✅ Correctly rejected duplicate registration: "${duplicateResult.message}"`);
+
+  if (!studentId) {
+    throw new Error('Failed to retrieve studentId for subsequent tests');
+  }
 
   // 5. Create multiple attendance records
   console.log('\n5. Creating historical attendance records...');
@@ -155,18 +221,23 @@ async function runTests() {
   const summaryResponse = await fetch(`${BASE_URL}/students/${studentId}/summary`, {
     headers: { 'Authorization': `Bearer ${adminToken}` }
   });
-  const summaryResult = await summaryResponse.json();
+  const summaryResult = (await summaryResponse.json()) as SummaryResponse;
   check.strictEqual(summaryResponse.status, 200);
   
-  const { student, latestAttendance, latestAcademicRecord } = summaryResult.data;
+  const summaryData = summaryResult.data;
+  if (!summaryData || !summaryData.latestAttendance || !summaryData.latestAcademicRecord) {
+    throw new Error('Latest attendance or academic records missing in summary data');
+  }
+
+  const { student, latestAttendance, latestAcademicRecord } = summaryData;
   console.log('✅ Summary fetched successfully!');
   console.log(`👨‍🎓 Student: ${student.name} (${student.enrollmentNumber})`);
   console.log(`📈 Latest Attendance: ${latestAttendance.attendancePercentage}% (recorded: ${latestAttendance.recordedAt})`);
   console.log(`📚 Latest Academics: ${latestAcademicRecord.averageMarks} marks, ${latestAcademicRecord.backlogCount} backlogs (recorded: ${latestAcademicRecord.recordedAt})`);
 
   // Verify that it selected the latest (February) values
-  check.strictEqual(parseFloat(latestAttendance.attendancePercentage), 65.5, 'Should select latest attendance');
-  check.strictEqual(parseFloat(latestAcademicRecord.averageMarks), 58.4, 'Should select latest average marks');
+  check.strictEqual(parseFloat(latestAttendance.attendancePercentage as string), 65.5, 'Should select latest attendance');
+  check.strictEqual(parseFloat(latestAcademicRecord.averageMarks as string), 58.4, 'Should select latest average marks');
   check.strictEqual(latestAcademicRecord.backlogCount, 2, 'Should select latest backlog count');
 
   // 8. Delete student and verify cascade
@@ -187,6 +258,12 @@ async function runTests() {
   console.log('✅ Lookup correctly returned 404 Student Not Found.');
 
   console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY! The raw-SQL backend flow is completely verified.');
+}
+
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  [key: string]: any;
 }
 
 runTests().catch((err) => {

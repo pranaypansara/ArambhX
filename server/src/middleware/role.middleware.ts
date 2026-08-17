@@ -1,5 +1,8 @@
-export const authorize = (...roles) => {
-  return (req, res, next) => {
+import { Request, Response, NextFunction } from 'express';
+import { UserRole } from '../types/auth.types.js';
+
+export const authorize = (...roles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction): any => {
     if (!req.user) {
       return res.status(401).json({
         success: false,

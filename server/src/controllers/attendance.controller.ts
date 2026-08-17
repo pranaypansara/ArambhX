@@ -1,14 +1,15 @@
-import AcademicRepository from '../repositories/academic.repository.js';
+import { Request, Response, NextFunction } from 'express';
+import AttendanceRepository from '../repositories/attendance.repository.js';
 import StudentRepository from '../repositories/student.repository.js';
 import { studentIdParamSchema, paginationQuerySchema } from '../validators/student.validator.js';
 
-// @desc    Add a new academic record for a student
-// @route   POST /api/students/:id/academic-records
+// @desc    Add a new attendance record for a student
+// @route   POST /api/students/:id/attendance
 // @access  Private (ADMIN, FACULTY only)
-export const createRecord = async (req, res, next) => {
+export const createRecord = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
-    const { averageMarks, backlogCount, assignmentCompletion, lmsActivity, recordedAt } = req.body;
+    const { attendancePercentage, recordedAt } = req.body;
 
     // Verify student exists
     const student = await StudentRepository.findById(studentId);
@@ -20,18 +21,15 @@ export const createRecord = async (req, res, next) => {
     }
 
     // Insert record
-    const record = await AcademicRepository.create({
+    const record = await AttendanceRepository.create({
       studentId,
-      averageMarks,
-      backlogCount,
-      assignmentCompletion,
-      lmsActivity,
+      attendancePercentage,
       recordedAt
     });
 
     res.status(201).json({
       success: true,
-      message: 'Academic record added successfully',
+      message: 'Attendance record added successfully',
       data: record
     });
   } catch (error) {
@@ -39,10 +37,10 @@ export const createRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Get academic records history for a student
-// @route   GET /api/students/:id/academic-records
+// @desc    Get attendance history for a student
+// @route   GET /api/students/:id/attendance
 // @access  Private (ADMIN, FACULTY, COUNSELOR)
-export const getHistory = async (req, res, next) => {
+export const getHistory = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
     const parsedQuery = paginationQuerySchema.parse(req.query);
@@ -58,14 +56,14 @@ export const getHistory = async (req, res, next) => {
       });
     }
 
-    const totalRecords = await AcademicRepository.countByStudentId(studentId);
-    const history = await AcademicRepository.findByStudentId({ studentId, limit, offset });
+    const totalRecords = await AttendanceRepository.countByStudentId(studentId);
+    const history = await AttendanceRepository.findByStudentId({ studentId, limit, offset });
 
     res.status(200).json({
       success: true,
-      message: 'Academic history fetched successfully',
+      message: 'Attendance history fetched successfully',
       data: {
-        academicRecords: history
+        attendance: history
       },
       pagination: {
         page,

@@ -1,19 +1,20 @@
+import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 
-export const notFoundHandler = (req, res, next) => {
+export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
   next(error);
 };
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): any => {
   if (res.headersSent) {
     return next(err);
   }
 
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || 'Internal Server Error';
-  let errors = null;
+  let errors: any = null;
 
   // 1. Zod validation errors
   if (err instanceof ZodError || err.type === 'ValidationError') {
