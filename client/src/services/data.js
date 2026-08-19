@@ -90,15 +90,18 @@ export function deriveFactors(features) {
  * meaningful window to compare.
  */
 export function evaluateIntervention(summary, iv) {
-  const history = (summary?.history || [])
-    .filter((p) => p.predicted_at)
+  // Defensive: ensure history is an array
+  const rawHistory = summary?.history;
+  const history = Array.isArray(rawHistory) ? rawHistory : [];
+  const filteredHistory = history
+    .filter((p) => p?.predicted_at)
     .sort((a, b) => new Date(a.predicted_at) - new Date(b.predicted_at));
-  if (history.length === 0 || !iv.created_at) return null;
+  if (filteredHistory.length === 0 || !iv?.created_at) return null;
 
   const created = new Date(iv.created_at);
-  const before = history.filter((p) => new Date(p.predicted_at) <= created);
-  const beforePred = before.length ? before[before.length - 1] : history[0];
-  const afterPred = history[history.length - 1];
+  const before = filteredHistory.filter((p) => new Date(p.predicted_at) <= created);
+  const beforePred = before.length ? before[before.length - 1] : filteredHistory[0];
+  const afterPred = filteredHistory[filteredHistory.length - 1];
   if (!beforePred || !afterPred) return null;
   if (new Date(afterPred.predicted_at) <= created) return null;
 
@@ -114,8 +117,9 @@ export function evaluateIntervention(summary, iv) {
 
 export function summarizeOutcomes(summaries) {
   const list = [];
-  (summaries || []).forEach((s) => {
-    (s.allInterventions || []).forEach((iv) => {
+  (Array.isArray(summaries) ? summaries : []).forEach((s) => {
+    const interventions = Array.isArray(s?.allInterventions) ? s.allInterventions : [];
+    interventions.forEach((iv) => {
       const evaluation = evaluateIntervention(s, iv);
       if (!evaluation) return;
       list.push({ id: iv.id, studentId: s.student?.id, student: s.student, iv, evaluation });
