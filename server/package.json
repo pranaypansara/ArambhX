@@ -8,7 +8,9 @@
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "test": "tsx test-api.ts"
+    "test": "tsx test-api.ts",
+    "seed:ml": "tsx src/scripts/seedMlTestData.ts",
+    "test:ml-features": "tsx src/scripts/verifyMlFeatures.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
