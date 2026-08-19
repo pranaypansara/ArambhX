@@ -5,8 +5,17 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 
 const app = express();
 
-// Enable Cross-Origin Resource Sharing
-app.use(cors());
+// CORS is restricted to configured frontend origins (comma-separated
+// CLIENT_ORIGINS env override). Local dev defaults cover the Vite dev server
+// and a common React port. No credentials/cookies are used — JWT travels in the
+// Authorization header.
+const corsOrigins = process.env.CLIENT_ORIGINS
+  ? process.env.CLIENT_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({ origin: corsOrigins }));
 
 // Parse incoming JSON requests
 app.use(express.json());

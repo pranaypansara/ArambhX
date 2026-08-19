@@ -136,6 +136,38 @@ export interface StudentDashboardData {
   latestInterventions: RecentIntervention[];
 }
 
+/**
+ * Phase 13: safe data payload for STUDENT-role callers of
+ * GET /api/students/:id/dashboard.
+ *
+ * Internal ML metrics (raw risk_probability, dropout labels, risk scores,
+ * alert severity/messages, audit data) are intentionally NOT exposed to
+ * students. Students only see their own profile, an active-alert COUNT, and
+ * their actionable support plan (intervention type/status/dates). This avoids
+ * presenting the ML output as a judgment on the student.
+ */
+export interface StudentSafeIntervention {
+  id: number;
+  type: InterventionType;
+  status: InterventionStatus;
+  createdAt: Date;
+}
+
+export interface StudentSafeDashboardData {
+  student: {
+    id: number;
+    name: string;
+    enrollmentNumber: string;
+    department: string;
+    semester: number;
+  };
+  alerts: {
+    activeCount: number;
+  };
+  interventions: StudentInterventionSummary;
+  latestInterventions: StudentSafeIntervention[];
+}
+
 /** Data payload for GET /api/dashboard/attention-students. */
 export interface AttentionStudentsData {
   attentionStudents: AttentionStudent[];

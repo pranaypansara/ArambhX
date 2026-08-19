@@ -1,42 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import UserRepository from '../repositories/user.repository.js';
+import {
+  registerPublic,
+  adminCreateUser,
+  login,
+  InvalidCredentialsError,
+  EmailAlreadyRegisteredError,
+  InvalidStudentLinkError,
+  MissingStudentLinkError
+} from '../services/auth.service.js';
+import { UserRole } from '../types/auth.types.js';
 
-const generateToken = (userId: number): string => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET || 'secretfallback',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
-  );
-};
-
-// @desc    Register a new user
+// @desc    Register a public user (FACULTY staff default, or linked STUDENT)
 // @route   POST /api/auth/register
-// @access  Public
+// @access  Public (role is server-derived — never client-provided)
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const { name, email, password, role } = req.body;
-
-    // Check if user already exists
-    const existingUser = await UserRepository.findByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'A user with this email already exists'
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user in the database via raw SQL Repository
-    const user = await UserRepository.create({
-      name,
-      email,
-      password: hashedPassword,
-      role
+    const user = await registerPublic({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      studentId: req.body.studentId ?? null
     });
 
     res.status(201).json({
@@ -45,67 +28,77 @@ export const register = async (req: Request, res: Response, next: NextFunction):
       data: user
     });
   } catch (error) {
+    if (error instanceof EmailAlreadyRegisteredError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    if (error instanceof InvalidStudentLinkError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     next(error);
   }
 };
 
-// @desc    Authenticate user and return JWT
+// @desc    ADMIN-only account creation (privileged roles + linked students)
+// @route   POST /api/auth/admin/create-user
+// @access  Private (ADMIN)
+export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const user = await adminCreateUser({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      role: req.body.role as UserRole,
+      studentId: req.body.studentId ?? null
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: user
+    });
+  } catch (error) {
+    if (error instanceof EmailAlreadyRegisteredError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    if (error instanceof InvalidStudentLinkError || error instanceof MissingStudentLinkError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+// @desc    Authenticate user and return JWT + safe profile
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const { email, password } = req.body;
-
-    // Find user by email
-    const user = await UserRepository.findByEmail(email);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password || '');
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Sign token
-    const token = generateToken(user.id);
-
-    // Prepare safe user object (remove password)
-    const { password: _, ...safeUser } = user;
-    const userAny = user as any;
-    
-    // Map database snake_case metadata to camelCase response formatting
-    const formattedUser = {
-      id: safeUser.id,
-      name: safeUser.name,
-      email: safeUser.email,
-      role: safeUser.role,
-      createdAt: userAny.created_at || safeUser.createdAt,
-      updatedAt: userAny.updated_at || safeUser.updatedAt
-    };
+    const { token, user } = await login({
+      email: req.body.email,
+      password: req.body.password
+    });
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
-      user: formattedUser
+      user
     });
   } catch (error) {
+    if (error instanceof InvalidCredentialsError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     next(error);
   }
 };
 
-// @desc    Get current user profile
+// @desc    Get the authenticated user's safe profile
 // @route   GET /api/auth/me
-// @access  Private
-export const getCurrentUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// @access  Private (any authenticated user)
+export const getCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     res.status(200).json({
       success: true,

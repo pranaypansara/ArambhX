@@ -47,6 +47,8 @@ export interface AuditLog {
   entityType: string;
   entityId: number | null;
   details: Record<string, unknown> | null;
+  /** Phase 13: actor role snapshot at the time of the action (nullable). */
+  role: string | null;
   createdAt: Date;
 }
 

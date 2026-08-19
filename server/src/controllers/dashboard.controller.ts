@@ -7,7 +7,8 @@ import { studentIdParamSchema } from '../validators/student.validator.js';
 import {
   getDashboardOverview,
   getAttentionStudents,
-  getStudentDashboard
+  getStudentDashboard,
+  getStudentSafeDashboard
 } from '../services/dashboard.service.js';
 import { StudentNotFoundError } from '../services/prediction.service.js';
 
@@ -59,7 +60,8 @@ export const getAttentionStudentsList = async (
 
 // @desc    Aggregated dashboard for a single student
 // @route   GET /api/students/:id/dashboard
-// @access  Private (ADMIN, FACULTY, COUNSELOR)
+// @access  Private (ADMIN, FACULTY, COUNSELOR = internal view;
+//                   STUDENT = safe, non-ML self view via ownership middleware)
 export const getStudentDashboardData = async (
   req: Request,
   res: Response,
@@ -68,7 +70,11 @@ export const getStudentDashboardData = async (
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
 
-    const data = await getStudentDashboard(studentId);
+    // STUDENT callers get the sanitized self-view (no raw ML metrics/severity).
+    const data =
+      req.user?.role === 'STUDENT'
+        ? await getStudentSafeDashboard(studentId)
+        : await getStudentDashboard(studentId);
 
     res.status(200).json({
       success: true,

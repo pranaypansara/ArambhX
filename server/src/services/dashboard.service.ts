@@ -10,7 +10,8 @@ import {
   RecentIntervention,
   RiskBucket,
   StudentDashboardData,
-  StudentPredictionTrend
+  StudentPredictionTrend,
+  StudentSafeDashboardData
 } from '../types/dashboard.types.js';
 
 /**
@@ -137,5 +138,49 @@ export const getStudentDashboard = async (studentId: number): Promise<StudentDas
     },
     interventions: interventionSummary,
     latestInterventions: latestInterventions as RecentIntervention[]
+  };
+};
+
+/**
+ * Phase 13: STUDENT-facing dashboard. Same underlying stored data, but shaped
+ * so students never receive raw ML probabilities, internal risk labels/scores,
+ * alert severity/messages, or audit details — only their profile, an active
+ * alert count, and their actionable support plan.
+ */
+export const getStudentSafeDashboard = async (
+  studentId: number
+): Promise<StudentSafeDashboardData> => {
+  const student = await StudentRepository.findById(studentId);
+  if (!student) {
+    return Promise.reject(new StudentNotFoundError(studentId));
+  }
+
+  const [activeAlerts, interventionSummary, latestInterventions] = await Promise.all([
+    AlertRepository.findOpenByStudentId(studentId),
+    DashboardRepository.getStudentInterventionSummary(studentId),
+    DashboardRepository.getRecentInterventionsForStudent(
+      studentId,
+      STUDENT_LATEST_INTERVENTIONS_LIMIT
+    )
+  ]);
+
+  return {
+    student: {
+      id: student.id,
+      name: student.name,
+      enrollmentNumber: student.enrollmentNumber,
+      department: student.department,
+      semester: student.semester
+    },
+    alerts: {
+      activeCount: activeAlerts.length
+    },
+    interventions: interventionSummary,
+    latestInterventions: (latestInterventions as RecentIntervention[]).map((intervention) => ({
+      id: intervention.id,
+      type: intervention.type,
+      status: intervention.status,
+      createdAt: intervention.createdAt
+    }))
   };
 };

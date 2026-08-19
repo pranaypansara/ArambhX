@@ -12,16 +12,21 @@ import {
  *   - FK user_id -> users.id (nullable): actor when authentication is present
  *   - details JSONB for non-sensitive structured context
  *
- * No schema changes are made in this phase — the system reuses the table.
+ * Phase 13 added a nullable `role` column that snapshots the actor's role at
+ * the time of the action. It is populated automatically from the users table
+ * (via a subquery) so callers do not need to thread role through every call
+ * site.
+ *
+ * No CREATE TABLE is performed — the table is reused.
  */
 class AuditRepository {
-  /** Insert an audit log row. */
+  /** Insert an audit log row. The actor's role is snapshotted from `users`. */
   async create(input: CreateAuditLogInput): Promise<AuditLog> {
     const query = {
       text: `
         WITH inserted AS (
-          INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, role)
+          VALUES ($1, $2, $3, $4, $5, (SELECT role FROM users WHERE id = $1))
           RETURNING
             id,
             user_id AS "userId",
@@ -29,6 +34,7 @@ class AuditRepository {
             entity_type AS "entityType",
             entity_id AS "entityId",
             details,
+            role,
             created_at AS "createdAt"
         )
         SELECT i.*, u.name AS "userName"
@@ -81,6 +87,7 @@ class AuditRepository {
           a.entity_type AS "entityType",
           a.entity_id AS "entityId",
           a.details,
+          a.role,
           a.created_at AS "createdAt"
         FROM audit_logs a
         LEFT JOIN users u ON u.id = a.user_id

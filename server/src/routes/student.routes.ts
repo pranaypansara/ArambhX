@@ -30,6 +30,7 @@ import {
 import { getStudentDashboardData } from '../controllers/dashboard.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
+import { studentSelfOnly } from '../middleware/ownership.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createStudentSchema, updateStudentSchema } from '../validators/student.validator.js';
 import { createAttendanceSchema } from '../validators/attendance.validator.js';
@@ -56,7 +57,8 @@ router.get(
 router.get(
   '/:id',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getStudentById
 );
 
@@ -87,7 +89,8 @@ router.post(
 router.get(
   '/:id/attendance',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getAttendanceHistory
 );
 
@@ -103,7 +106,8 @@ router.post(
 router.get(
   '/:id/academic-records',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getAcademicHistory
 );
 
@@ -111,7 +115,8 @@ router.get(
 router.get(
   '/:id/summary',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getStudentSummary
 );
 
@@ -171,18 +176,23 @@ router.post(
 );
 
 // Phase 10: intervention recommendations for a specific student
+// (STUDENT role restricted to their own record via studentSelfOnly)
 router.get(
   '/:id/interventions',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getStudentInterventions
 );
 
 // Phase 11: aggregated dashboard overview for a specific student
+// (STUDENT role restricted to their own record via studentSelfOnly; the
+//  controller returns a safe, non-ML student-facing payload for STUDENTs)
 router.get(
   '/:id/dashboard',
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  studentSelfOnly,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'),
   getStudentDashboardData
 );
 
