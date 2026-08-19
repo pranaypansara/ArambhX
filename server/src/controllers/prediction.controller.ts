@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { studentIdParamSchema } from '../validators/student.validator.js';
-import { predictStudent, StudentNotFoundError } from '../services/prediction.service.js';
+import { studentIdParamSchema, paginationQuerySchema } from '../validators/student.validator.js';
+import {
+  predictStudent,
+  StudentNotFoundError,
+  getPredictionHistory,
+  getLatestPrediction
+} from '../services/prediction.service.js';
 import {
   MLServiceUnavailableError,
   MLInvalidResponseError
@@ -21,15 +26,17 @@ export const predictStudentRisk = async (
 
     res.status(200).json({
       success: true,
-      message: 'Prediction completed successfully',
+      message: 'Prediction completed and stored successfully',
       data: {
+        predictionId: result.stored.id,
         studentId: result.studentId,
         prediction: result.prediction.prediction,
         prediction_label: result.prediction.prediction_label,
         risk_probability: result.prediction.risk_probability,
         threshold: result.prediction.threshold,
         risk_level: result.prediction.risk_level,
-        model: result.prediction.model
+        model: result.prediction.model,
+        createdAt: result.stored.predictedAt
       }
     });
   } catch (error) {
@@ -49,6 +56,75 @@ export const predictStudentRisk = async (
       return res.status(error.statusCode).json({
         success: false,
         message: 'ML service returned an invalid response.'
+      });
+    }
+    next(error);
+  }
+};
+
+// @desc    Get prediction history for a student
+// @route   GET /api/students/:id/predictions
+// @access  Private (ADMIN, FACULTY, COUNSELOR)
+export const getStudentPredictions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { id } = studentIdParamSchema.parse(req.params);
+    const { limit } = paginationQuerySchema.parse(req.query);
+
+    const history = await getPredictionHistory(id, limit);
+
+    res.status(200).json({
+      success: true,
+      message: 'Prediction history retrieved successfully',
+      data: {
+        studentId: id,
+        predictions: history
+      }
+    });
+  } catch (error) {
+    if (error instanceof StudentNotFoundError) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+    next(error);
+  }
+};
+
+// @desc    Get the latest prediction for a student
+// @route   GET /api/students/:id/predictions/latest
+// @access  Private (ADMIN, FACULTY, COUNSELOR)
+export const getStudentLatestPrediction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const { id } = studentIdParamSchema.parse(req.params);
+
+    const latest = await getLatestPrediction(id);
+
+    if (!latest) {
+      return res.status(404).json({
+        success: false,
+        message: 'No prediction history found for this student'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Latest prediction retrieved successfully',
+      data: latest
+    });
+  } catch (error) {
+    if (error instanceof StudentNotFoundError) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
       });
     }
     next(error);

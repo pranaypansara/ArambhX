@@ -16,7 +16,11 @@ import {
   getHistory as getAcademicHistory
 } from '../controllers/academic.controller.js';
 import { getMLFeatures } from '../controllers/mlFeature.controller.js';
-import { predictStudentRisk } from '../controllers/prediction.controller.js';
+import {
+  predictStudentRisk,
+  getStudentPredictions,
+  getStudentLatestPrediction
+} from '../controllers/prediction.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -112,12 +116,27 @@ router.get(
   getMLFeatures
 );
 
-// Phase 6: run ML1 prediction via the FastAPI ML1 service (no persistence yet)
+// Phase 6/7: run ML1 prediction via the FastAPI ML1 service and persist result
 router.post(
   '/:id/predict',
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   predictStudentRisk
+);
+
+// Phase 7: prediction history retrieval
+router.get(
+  '/:id/predictions',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getStudentPredictions
+);
+
+router.get(
+  '/:id/predictions/latest',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getStudentLatestPrediction
 );
 
 export default router;
