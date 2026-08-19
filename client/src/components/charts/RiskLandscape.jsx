@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ALL_STUDENT_SUMMARIES } from '@/data/mockData';
 import { riskColor } from '@/lib/riskUtils';
 
 const W = 720, H = 340, PAD = 36;
@@ -11,17 +10,18 @@ function yScale(velocity) {
   return H - PAD - ((clamped + 8) / 22) * (H - PAD * 2);
 }
 
-export default function RiskLandscape() {
+/** Scatter of students positioned by risk (x) and deterioration velocity (y). */
+export default function RiskLandscape({ summaries = [] }) {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(null);
 
-  const points = useMemo(() => ALL_STUDENT_SUMMARIES.map((s) => ({
+  const points = useMemo(() => summaries.map((s) => ({
     id: s.student.id,
     name: s.student.name,
-    risk: s.prediction.risk_probability,
-    velocity: s.velocity,
-    level: s.prediction.risk_level,
-  })), []);
+    risk: s.prediction?.risk_probability ?? 0,
+    velocity: s.velocity ?? 0,
+    level: s.prediction?.risk_level ?? 'LOW',
+  })), [summaries]);
 
   return (
     <div className="relative">
@@ -39,14 +39,14 @@ export default function RiskLandscape() {
         <line x1={PAD} y1={(H) / 2} x2={W - PAD} y2={H / 2} stroke="#efe1df" strokeWidth={1} strokeDasharray="3 4" />
 
         {/* quadrant labels */}
-        <text x={PAD + 8} y={PAD + 16} fill="#5f8a34" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5">STABLE</text>
-        <text x={W - PAD - 8} y={PAD + 16} fill="#ef6355" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5" textAnchor="end">CRITICAL</text>
-        <text x={PAD + 8} y={H - PAD - 8} fill="#8f6521" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5">WATCH</text>
-        <text x={W - PAD - 8} y={H - PAD - 8} fill="#95522b" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5" textAnchor="end">DETERIORATING</text>
+        <text x={PAD + 8} y={PAD + 16} fill="#5f8a34" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5">LOW</text>
+        <text x={W - PAD - 8} y={PAD + 16} fill="#ef6355" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5" textAnchor="end">HIGH</text>
+        <text x={PAD + 8} y={H - PAD - 8} fill="#8f6521" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5">LOW</text>
+        <text x={W - PAD - 8} y={H - PAD - 8} fill="#95522b" fontSize="11" fontFamily="IBM Plex Mono" letterSpacing="0.5" textAnchor="end">HIGH</text>
 
         {/* axis captions */}
         <text x={W / 2} y={H - 6} fill="#9c8288" fontSize="10" fontFamily="IBM Plex Mono" textAnchor="middle">RISK PROBABILITY →</text>
-        <text x={12} y={H / 2} fill="#9c8288" fontSize="10" fontFamily="IBM Plex Mono" textAnchor="middle" transform={`rotate(-90 12 ${H / 2})`}>DETERIORATION VELOCITY →</text>
+        <text x={12} y={H / 2} fill="#9c8288" fontSize="10" fontFamily="IBM Plex Mono" textAnchor="middle" transform={`rotate(-90 12 ${H / 2})`}>VELOCITY (RISK CHANGE) →</text>
 
         {points.map((p, i) => {
           const cx = xScale(p.risk);
@@ -55,7 +55,6 @@ export default function RiskLandscape() {
           const isHover = hovered === p.id;
           return (
             <g key={p.id} className="node-in" style={{ animationDelay: `${i * 18}ms` }}>
-              {/* comet trail hinting at recent trajectory */}
               <line
                 x1={cx - (p.velocity > 0 ? 14 : -10)} y1={cy + 6}
                 x2={cx} y2={cy}
@@ -82,8 +81,8 @@ export default function RiskLandscape() {
             className="absolute panel-alt px-3 py-2 text-xs pointer-events-none shadow-xl"
             style={{ left: `${(xScale(p.risk) / W) * 100}%`, top: `${(yScale(p.velocity) / H) * 100}%`, transform: 'translate(-50%, -130%)' }}
           >
-            <div className="text-slate-100 font-medium">{p.name}</div>
-            <div className="text-slate-400 font-mono">{p.risk}% risk · {p.velocity > 0 ? '+' : ''}{p.velocity} pts velocity</div>
+            <div className="text-slate-700 font-medium">{p.name}</div>
+            <div className="text-slate-500 font-mono">{p.risk}% risk · {p.velocity > 0 ? '+' : ''}{p.velocity} pts velocity</div>
           </div>
         );
       })()}

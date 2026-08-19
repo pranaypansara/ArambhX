@@ -1,19 +1,33 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpDown, ChevronRight, Scale, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
-import { ALL_STUDENT_SUMMARIES, USERS, factorsForPrediction } from '@/data/mockData';
 import { PageHeader, SectionCard } from '@/components/ui/Page';
 import RiskBadge from '@/components/ui/RiskBadge';
 import TrendIndicator from '@/components/ui/TrendIndicator';
 import StudentAvatar from '@/components/ui/StudentAvatar';
-import { EmptyState } from '@/components/ui/States';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import { useAsyncData, fetchSummaries, ALERT_TYPES, INTERVENTION_STATUSES } from '@/services/data';
+import { isOpenAlert } from '@/services/data';
 import { formatDate } from '@/lib/riskUtils';
+
+const RISK_OPTIONS = [
+  { value: 'ALL', label: 'All risk levels' },
+  { value: 'HIGH', label: 'High' },
+  { value: 'MEDIUM', label: 'Medium' },
+  { value: 'LOW', label: 'Low' },
+];
 
 const SORTS = {
   priority: { label: 'Highest priority', fn: (a, b) => b.priority - a.priority },
-  risk: { label: 'Highest risk', fn: (a, b) => b.prediction.risk_probability - a.prediction.risk_probability },
+  risk: {
+    label: 'Highest risk',
+    fn: (a, b) => (b.prediction?.risk_probability ?? -1) - (a.prediction?.risk_probability ?? -1),
+  },
   velocity: { label: 'Fastest deterioration', fn: (a, b) => b.velocity - a.velocity },
-  alerts: { label: 'Most recent alert', fn: (a, b) => (b.openAlerts[0]?.created_at || '').localeCompare(a.openAlerts[0]?.created_at || '') },
+  alerts: {
+    label: 'Most recent alert',
+    fn: (a, b) => (b.openAlerts[0]?.created_at || '').localeCompare(a.openAlerts[0]?.created_at || ''),
+  },
   overdue: {
     label: 'Intervention overdue',
     fn: (a, b) => {
@@ -23,20 +37,17 @@ const SORTS = {
   },
 };
 
-const DEPARTMENTS = [...new Set(ALL_STUDENT_SUMMARIES.map(s => s.student.department))];
-const SEMESTERS = [...new Set(ALL_STUDENT_SUMMARIES.map(s => s.student.semester))].sort((a, b) => a - b);
-const ALERT_TYPES = ['EARLY_WARNING', 'HIGH_RISK', 'CRITICAL', 'MULTI_FACTOR'];
-const INTERVENTION_STATUSES = ['RECOMMENDED', 'ASSIGNED', 'STARTED', 'MONITORING', 'COMPLETED', 'ESCALATED', 'CLOSED'];
-
 function actionLabel(s) {
-  if (s.openAlerts.some(a => a.status === 'OPEN')) return 'Investigate';
+  if (s.openAlerts.some(isOpenAlert)) return 'Investigate';
   if (s.activeInterventions.some(iv => iv.follow_up_date && new Date(iv.follow_up_date) <= new Date())) return 'Follow Up';
-  if (s.activeInterventions.length === 0 && s.prediction.risk_level !== 'STABLE') return 'Assign';
+  if (s.activeInterventions.length === 0 && s.prediction?.risk_level === 'HIGH') return 'Assign';
   return 'Review';
 }
 
 export default function Students() {
   const navigate = useNavigate();
+  const { data: summaries, loading, error, reload } = useAsyncData(() => fetchSummaries(), []);
+
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [deptFilter, setDeptFilter] = useState('ALL');
   const [semFilter, setSemFilter] = useState('ALL');
@@ -48,17 +59,20 @@ export default function Students() {
   const [compareIds, setCompareIds] = useState([]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
+  const DEPARTMENTS = useMemo(() => ([...new Set((summaries || []).map(s => s.student.department))]), [summaries]);
+  const SEMESTERS = useMemo(() => ([...new Set((summaries || []).map(s => s.student.semester))].sort((a, b) => a - b)), [summaries]);
+
   const rows = useMemo(() => {
-    let r = [...ALL_STUDENT_SUMMARIES];
-    if (riskFilter !== 'ALL') r = r.filter(s => s.prediction.risk_level === riskFilter);
+    let r = summaries ? [...summaries] : [];
+    if (riskFilter !== 'ALL') r = r.filter(s => s.prediction?.risk_level === riskFilter);
     if (deptFilter !== 'ALL') r = r.filter(s => s.student.department === deptFilter);
     if (semFilter !== 'ALL') r = r.filter(s => String(s.student.semester) === semFilter);
     if (trendFilter !== 'ALL') r = r.filter(s => trendFilter === 'UP' ? s.velocity > 1 : trendFilter === 'DOWN' ? s.velocity < -1 : Math.abs(s.velocity) <= 1);
     if (alertFilter !== 'ALL') r = r.filter(s => s.openAlerts.some(a => a.alert_type === alertFilter));
     if (ivStatusFilter !== 'ALL') r = r.filter(s => s.activeInterventions.some(iv => iv.status === ivStatusFilter) || (ivStatusFilter === 'NONE' && s.activeInterventions.length === 0));
-    if (query) r = r.filter(s => s.student.name.toLowerCase().includes(query.toLowerCase()) || s.student.enrollment_number.toLowerCase().includes(query.toLowerCase()));
+    if (query) r = r.filter(s => s.student.name.toLowerCase().includes(query.toLowerCase()) || (s.student.enrollment_number || '').toLowerCase().includes(query.toLowerCase()));
     return [...r].sort(SORTS[sortKey].fn);
-  }, [riskFilter, deptFilter, semFilter, trendFilter, alertFilter, ivStatusFilter, sortKey, query]);
+  }, [summaries, riskFilter, deptFilter, semFilter, trendFilter, alertFilter, ivStatusFilter, sortKey, query]);
 
   function toggleCompare(id) {
     setCompareIds((c) => c.includes(id) ? c.filter(x => x !== id) : c.length < 3 ? [...c, id] : c);
@@ -98,11 +112,7 @@ export default function Students() {
           </div>
 
           <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
-            <option value="ALL">All risk levels</option>
-            <option value="CRITICAL">Critical</option>
-            <option value="DETERIORATING">Deteriorating</option>
-            <option value="WATCH">Watch</option>
-            <option value="STABLE">Stable</option>
+            {RISK_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
@@ -152,7 +162,15 @@ export default function Students() {
       </SectionCard>
 
       <SectionCard className="!p-0 overflow-hidden">
-        {rows.length === 0 ? (
+        {loading ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14" />)}
+          </div>
+        ) : error ? (
+          <div className="p-6">
+            <ErrorState title="Could not load students" description={error.message} onRetry={() => reload({ force: true })} />
+          </div>
+        ) : rows.length === 0 ? (
           <EmptyState title="No students match these filters" description="Try widening the risk level, department, or other filters." />
         ) : (
           <div className="overflow-x-auto">
@@ -164,20 +182,18 @@ export default function Students() {
                   <th className="px-3 py-3 font-medium">Current Risk</th>
                   <th className="px-3 py-3 font-medium">Trend</th>
                   <th className="px-3 py-3 font-medium">Priority</th>
-                  <th className="px-3 py-3 font-medium">Main Risk Factor</th>
+                  <th className="px-3 py-3 font-medium">Top Signal</th>
                   <th className="px-3 py-3 font-medium">Alert</th>
                   <th className="px-3 py-3 font-medium">Intervention</th>
-                  <th className="px-3 py-3 font-medium">Assigned Staff</th>
                   <th className="px-3 py-3 font-medium">Last Updated</th>
                   <th className="px-4 py-3 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((s) => {
-                  const topFactor = factorsForPrediction(s.prediction.id)[0];
+                  const topSignal = [...s.openAlerts].sort((a, b) => severityRank(b.priority) - severityRank(a.priority))[0];
                   const alert = s.openAlerts[0];
                   const iv = s.activeInterventions[0];
-                  const staff = iv ? USERS.find(u => u.id === iv.assigned_to) : null;
                   return (
                     <tr
                       key={s.student.id}
@@ -195,30 +211,33 @@ export default function Students() {
                         <div className="flex items-center gap-2.5">
                           <StudentAvatar name={s.student.name} size={30} />
                           <div className="min-w-0">
-                            <div className="text-slate-200 font-medium truncate">{s.student.name}</div>
+                            <div className="text-slate-700 font-medium truncate">{s.student.name}</div>
                             <div className="text-[11px] text-slate-500 font-mono">{s.student.department} · Sem {s.student.semester}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-slate-100">{s.prediction.risk_probability}%</span>
-                          <RiskBadge level={s.prediction.risk_level} size="sm" />
-                        </div>
+                        {s.prediction ? (
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-slate-700">{s.prediction.risk_probability}%</span>
+                            <RiskBadge level={s.prediction.risk_level} size="sm" />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500">Not analyzed</span>
+                        )}
                       </td>
                       <td className="px-3 py-3"><TrendIndicator value={s.velocity} /></td>
-                      <td className="px-3 py-3 font-mono text-slate-300">{s.priority}</td>
-                      <td className="px-3 py-3 text-slate-400 text-xs">{topFactor?.feature_name || '—'}</td>
+                      <td className="px-3 py-3 font-mono text-slate-700">{s.priority}</td>
+                      <td className="px-3 py-3 text-slate-500 text-xs">{topSignal ? topSignal.alert_type.replace('_', ' ') : '—'}</td>
                       <td className="px-3 py-3 text-xs">
-                        {alert ? <span className="text-amber-300">{alert.alert_type.replace('_', ' ')}</span> : <span className="text-slate-600">None</span>}
+                        {alert ? <span className="text-amber-600">{alert.alert_type.replace('_', ' ')}</span> : <span className="text-slate-400">None</span>}
                       </td>
-                      <td className="px-3 py-3 text-xs text-slate-400">{iv ? iv.intervention_label : '—'}</td>
-                      <td className="px-3 py-3 text-xs text-slate-400">{staff ? staff.name : '—'}</td>
-                      <td className="px-3 py-3 text-xs text-slate-500 font-mono">{formatDate(s.prediction.predicted_at)}</td>
+                      <td className="px-3 py-3 text-xs text-slate-500">{iv ? iv.intervention_label : '—'}</td>
+                      <td className="px-3 py-3 text-xs text-slate-500 font-mono">{s.prediction ? formatDate(s.prediction.predicted_at) : '—'}</td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => navigate(`/students/${s.student.id}`)}
-                          className="flex items-center gap-1 text-xs chip px-2.5 py-1.5 rounded-full text-teal-300"
+                          className="flex items-center gap-1 text-xs chip px-2.5 py-1.5 rounded-full text-teal-500"
                         >
                           {actionLabel(s)} <ChevronRight size={12} />
                         </button>
@@ -233,4 +252,8 @@ export default function Students() {
       </SectionCard>
     </div>
   );
+}
+
+function severityRank(priority) {
+  return { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 }[priority] || 0;
 }

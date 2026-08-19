@@ -1,34 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, CheckCircle2, Circle, Calendar, MessageCircle, ShieldCheck, Sparkles,
-  Send, Bell, CalendarClock, TrendingUp, LogOut,
+  ArrowLeft, CheckCircle2, Circle, MessageCircle, ShieldCheck,
+  Send, LogOut, UserRound,
 } from 'lucide-react';
-import {
-  STUDENTS, ATTENDANCE_RECORDS, ACADEMIC_RECORDS, interventionsForStudent, USERS,
-} from '@/data/mockData';
 import StudentAvatar from '@/components/ui/StudentAvatar';
-import { formatDate } from '@/lib/riskUtils';
+import { formatDate, statusLabel } from '@/lib/riskUtils';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
+import { useAsyncData, INTERVENTION_TYPE_META } from '@/services/data';
+import { api } from '@/services/api';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 
-const DEFAULT_STUDENT = STUDENTS[0]; // Rahul Mehta
-
-function latestFor(records, studentId) {
-  const r = records.filter(x => x.student_id === studentId);
-  return r[r.length - 1] || records[0];
+function latestValue(records, getter) {
+  if (!records || records.length === 0) return null;
+  const last = records[records.length - 1];
+  const v = getter(last);
+  return typeof v === 'number' ? v : parseFloat(v || 0);
 }
-function prevFor(records, studentId) {
-  const r = records.filter(x => x.student_id === studentId);
-  return r[r.length - 2] || records[0];
-}
-
-const RECOVERY_TASKS = [
-  { id: 1, text: 'Attend upcoming tutorial session' },
-  { id: 2, text: 'Submit the pending Data Structures assignment' },
-  { id: 3, text: 'Meet your academic mentor this week' },
-  { id: 4, text: 'Log in to the LMS and review missed lecture notes' },
-];
 
 function ProgressCard({ label, value, changeText, positive }) {
   return (
@@ -42,34 +31,32 @@ function ProgressCard({ label, value, changeText, positive }) {
 
 const STUDENT_PROMPTS = ['How am I doing?', 'What should I focus on?', 'When is my next meeting?'];
 
-function buildStudentAnswer(text, ctx) {
+function buildStudentAnswer(text) {
   const lower = text.toLowerCase();
   if (lower.includes('doing') || lower.includes('how am i')) {
-    return `You're ${ctx.overallLabel.toLowerCase()} right now. ${ctx.attendanceDelta < -3 ? 'Attendance has dipped a bit — that\'s the main thing to watch.' : 'Attendance and coursework are holding steady.'}`;
+    return "Your profile is loaded from your academic records and support plan. Keep your upcoming tasks and check-ins top of mind.";
   }
   if (lower.includes('focus') || lower.includes('should i')) {
-    return `Start with your recovery plan tasks — submitting the pending assignment and attending your tutorial will make the biggest difference this week.`;
+    return "Focus on the tasks in your recovery plan below. Completing them is the biggest lever for this term.";
   }
   if (lower.includes('meeting') || lower.includes('mentor')) {
-    return ctx.activeCase ? `Your next check-in with ${ctx.mentor?.name || 'your mentor'} is on ${formatDate(ctx.activeCase.follow_up_date)}.` : `You don't have a scheduled mentor meeting right now.`;
+    return "You can see your assigned support case status on the right. Message your mentor or the faculty helpline for scheduling.";
   }
   return "I can help with how you're doing, what to focus on this week, or when your next mentor meeting is — try one of the quick questions below.";
 }
 
-function StudentPulseChat({ ctx }) {
+function StudentPulseChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm here to help you understand your progress. What would you like to know?" }]);
   const [input, setInput] = useState('');
   const scrollRef = useRef(null);
-
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
 
   function send(text) {
     const q = (text ?? input).trim();
     if (!q) return;
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setInput('');
-    setTimeout(() => setMessages((m) => [...m, { role: 'assistant', text: buildStudentAnswer(q, ctx) }]), 320);
+    setTimeout(() => setMessages((m) => [...m, { role: 'assistant', text: buildStudentAnswer(q) }]), 320);
   }
 
   if (!open) {
@@ -109,29 +96,34 @@ function StudentPulseChat({ ctx }) {
 }
 
 export default function StudentDashboard() {
-  const { user, isTeacher, logout } = useAuth();
+  const { user, role, isStaff, studentId, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
-  const [done, setDone] = useState({ 2: false });
+  const [done, setDone] = useState({});
 
-  const activeStudent = DEFAULT_STUDENT;
-  const displayName = user ? user.name : activeStudent.name;
-  const rollNo = user ? user.rollNumber : activeStudent.enrollment_number;
+  const targetStudentId = role === 'STUDENT' ? studentId : null;
 
-  const attendance = latestFor(ATTENDANCE_RECORDS, activeStudent.id);
-  const attendancePrev = prevFor(ATTENDANCE_RECORDS, activeStudent.id);
-  const academic = latestFor(ACADEMIC_RECORDS, activeStudent.id);
-  const academicPrev = prevFor(ACADEMIC_RECORDS, activeStudent.id);
-  const interventions = interventionsForStudent(activeStudent.id);
-  const activeCase = interventions[0];
-  const mentor = activeCase ? USERS.find(u => u.id === activeCase.assigned_to) : null;
-
-  const attendanceDelta = Math.round((attendance.attendance_percent - attendancePrev.attendance_percent) * 10) / 10;
-  const marksDelta = Math.round((academic.average_marks - academicPrev.average_marks) * 10) / 10;
-
-  const overallScore = Math.round((attendance.attendance_percent + academic.average_marks + academic.assignment_completion + academic.lms_activity) / 4);
-  const overallLabel = overallScore >= 80 ? 'On Track' : overallScore >= 60 ? 'Needs a Little Attention' : 'In Active Recovery';
-  const overallColor = overallScore >= 80 ? '#3A8F6A' : overallScore >= 60 ? '#D9922B' : '#C84C4C';
+  const { data, loading, error, reload } = useAsyncData(async () => {
+    // Staff preview: use the first available student.
+    let sid = targetStudentId;
+    if (!sid) {
+      const list = await api.listStudents({ page: 1, limit: 1 });
+      sid = list?.data?.students?.[0]?.id ?? null;
+      if (!sid) return { student: null, activeCase: null, attendance: null, academic: null };
+    }
+    const [dashRes, attRes, acaRes] = await Promise.allSettled([
+      api.getStudentDashboard(sid),
+      api.getAttendanceHistory(sid, { page: 1, limit: 20 }),
+      api.getAcademicHistory(sid, { page: 1, limit: 20 }),
+    ]);
+    const dash = dashRes.status === 'fulfilled' ? dashRes.value?.data : null;
+    const attendance = attRes.status === 'fulfilled' ? attRes.value?.data?.attendance || [] : [];
+    const academic = acaRes.status === 'fulfilled' ? acaRes.value?.data?.academicRecords || [] : [];
+    const interventions = dash?.latestInterventions || [];
+    const activeCase = interventions[0] || null;
+    return { student: dash?.student || null, activeCase, attendance, academic };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetStudentId]);
 
   const handleLogout = () => {
     logout();
@@ -139,15 +131,40 @@ export default function StudentDashboard() {
     navigate('/login');
   };
 
+  const attendance = latestValue(data?.attendance, (r) => r.attendancePercentage);
+  const academicM = latestValue(data?.academic, (r) => r.averageMarks);
+  const assignment = latestValue(data?.academic, (r) => r.assignmentCompletion);
+  const lms = latestValue(data?.academic, (r) => r.lmsActivity);
+
+  const displayName = data?.student?.name || user?.name || 'Student';
+  const rollNo = data?.student?.enrollmentNumber || '';
+  const activeCase = data?.activeCase;
+
+  const scores = { attendance, academicM, assignment, lms };
+  const computed = Object.values(scores).filter((v) => v !== null);
+  const overallScore = computed.length ? Math.round(computed.reduce((a, b) => a + b, 0) / computed.length) : null;
+  const overallLabel = overallScore == null ? 'No data yet' : overallScore >= 80 ? 'On Track' : overallScore >= 60 ? 'Needs a Little Attention' : 'In Active Recovery';
+  const overallColor = overallScore == null ? '#607580' : overallScore >= 80 ? '#3A8F6A' : overallScore >= 60 ? '#D9922B' : '#C84C4C';
+
   function toggleTask(id) {
     setDone((d) => ({ ...d, [id]: !d[id] }));
   }
+
+  const taskItems = activeCase
+    ? [
+        { id: `${activeCase.id}-1`, text: `${INTERVENTION_TYPE_META[activeCase.type]?.label || activeCase.type.replace(/_/g, ' ')} is active (${statusLabel(activeCase.status)})` },
+        { id: `${activeCase.id}-2`, text: 'Keep up with your attendance and on-time assignment submissions' },
+        { id: `${activeCase.id}-3`, text: 'Message your mentor or the faculty helpline if anything changes' },
+      ]
+    : [
+        { id: 'none-1', text: 'No active support case — stay on top of your attendance and submissions' },
+      ];
 
   return (
     <div className="min-h-screen bg-[#F8FAF9] text-[#153A5B]">
       <header className="border-b border-[#D9E8E7] bg-[#EDF7F8]">
         <div className="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
-          {isTeacher ? (
+          {isStaff ? (
             <Link to="/" className="flex items-center gap-1.5 text-xs text-[#2A8588] hover:underline font-extrabold">
               <ArrowLeft size={13} /> Faculty Command Center
             </Link>
@@ -163,7 +180,7 @@ export default function StudentDashboard() {
               <StudentAvatar name={displayName} size={28} ring="#2A8588" />
               <div className="text-left">
                 <span className="text-xs font-black text-[#153A5B] block leading-tight">{displayName}</span>
-                <span className="text-[10px] text-[#607580] font-mono block leading-tight">{rollNo}</span>
+                <span className="text-[10px] text-[#607580] font-mono block leading-tight">{rollNo || role}</span>
               </div>
             </div>
 
@@ -179,82 +196,94 @@ export default function StudentDashboard() {
       </header>
 
       <main className="max-w-5xl mx-auto px-5 py-8 space-y-6">
-        
-        {/* Banner */}
-        <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-[#2A8588] font-mono font-extrabold mb-1">My Student Pulse</div>
-            <h1 className="font-display text-2xl sm:text-3xl font-black text-[#153A5B]">Welcome back, {displayName.split(' ')[0]}!</h1>
-            <p className="text-xs text-[#607580] mt-1 font-medium">Semester progress and personal academic recovery tracking.</p>
-          </div>
-
-          <div className="bg-white px-4 py-2 rounded-2xl border border-[#D9E8E7] shadow-sm flex items-center gap-3">
-            <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: overallColor }} />
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-[#607580] font-bold">Overall Status</div>
-              <div className="font-display text-sm font-extrabold" style={{ color: overallColor }}>{overallLabel}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Meters Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ProgressCard label="Attendance" value={attendance.attendance_percent} changeText={`${attendanceDelta >= 0 ? '+' : ''}${attendanceDelta}% from last period`} positive={attendanceDelta >= 0} />
-          <ProgressCard label="Average Marks" value={academic.average_marks} changeText={`${marksDelta >= 0 ? '+' : ''}${marksDelta}% overall`} positive={marksDelta >= 0} />
-          <ProgressCard label="Assignments" value={academic.assignment_completion} changeText="On-time submission rate" positive={academic.assignment_completion >= 75} />
-          <ProgressCard label="LMS Activity" value={academic.lms_activity} changeText="Weekly engagement index" positive={academic.lms_activity >= 60} />
-        </div>
-
-        {/* Checklist & Support */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="font-display font-extrabold text-base text-[#153A5B] flex items-center gap-2">
-              <ShieldCheck className="text-[#3A8F6A]" size={18} />
-              <span>My Recovery Plan & Assigned Tasks</span>
-            </h2>
-
-            <div className="space-y-2">
-              {RECOVERY_TASKS.map((t) => {
-                const isDone = done[t.id];
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => toggleTask(t.id)}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
-                      isDone
-                        ? 'bg-[#3A8F6A]/10 border-[#3A8F6A]/30 text-[#607580]'
-                        : 'bg-[#F8FAF9] border-[#D9E8E7] hover:border-[#2A8588] text-[#153A5B]'
-                    }`}
-                  >
-                    {isDone ? <CheckCircle2 size={18} className="text-[#3A8F6A] shrink-0 mt-0.5" /> : <Circle size={18} className="text-[#607580] shrink-0 mt-0.5" />}
-                    <span className={`text-xs font-bold ${isDone ? 'line-through' : ''}`}>{t.text}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
+        {loading ? (
           <div className="space-y-6">
-            <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
-              <h2 className="font-display font-extrabold text-base text-[#153A5B]">Support Case Status</h2>
-              <div className="text-xs space-y-2 text-[#607580]">
+            <Skeleton className="h-36" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
+            </div>
+          </div>
+        ) : error ? (
+          <ErrorState title="Could not load your dashboard" description={error.message} onRetry={reload} />
+        ) : !data?.student ? (
+          <EmptyState icon={UserRound} title="No student profile linked" description="Your account isn't linked to a student profile yet. Contact an administrator." />
+        ) : (
+          <>
+            <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#2A8588] font-mono font-extrabold mb-1">My Student Pulse</div>
+                <h1 className="font-display text-2xl sm:text-3xl font-black text-[#153A5B]">Welcome back, {displayName.split(' ')[0]}!</h1>
+                <p className="text-xs text-[#607580] mt-1 font-medium">Semester progress and personal academic recovery tracking.</p>
+              </div>
+
+              <div className="bg-white px-4 py-2 rounded-2xl border border-[#D9E8E7] shadow-sm flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: overallColor }} />
                 <div>
-                  <span className="font-bold text-[#153A5B] block">Assigned Mentor:</span>
-                  <span>{mentor?.name || 'Dr. Himani Kaur'} ({mentor?.role || 'Faculty'})</span>
+                  <div className="text-[10px] uppercase tracking-wide text-[#607580] font-bold">Overall Status</div>
+                  <div className="font-display text-sm font-extrabold" style={{ color: overallColor }}>{overallLabel}</div>
                 </div>
-                {activeCase && (
-                  <div>
-                    <span className="font-bold text-[#153A5B] block">Next Follow-up Date:</span>
-                    <span>{formatDate(activeCase.follow_up_date)}</span>
-                  </div>
-                )}
               </div>
             </div>
 
-            <StudentPulseChat ctx={{ overallLabel, attendanceDelta, activeCase, mentor }} />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <ProgressCard label="Attendance" value={Math.round(attendance ?? 0)} changeText="Latest recorded period" positive={(attendance ?? 0) >= 75} />
+              <ProgressCard label="Average Marks" value={Math.round(academicM ?? 0)} changeText="Latest assessment period" positive={(academicM ?? 0) >= 60} />
+              <ProgressCard label="Assignments" value={Math.round(assignment ?? 0)} changeText="On-time submission rate" positive={(assignment ?? 0) >= 75} />
+              <ProgressCard label="LMS Activity" value={Math.round(lms ?? 0)} changeText="Weekly engagement index" positive={(lms ?? 0) >= 60} />
+            </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
+                <h2 className="font-display font-extrabold text-base text-[#153A5B] flex items-center gap-2">
+                  <ShieldCheck className="text-[#3A8F6A]" size={18} />
+                  <span>My Recovery Plan & Assigned Tasks</span>
+                </h2>
+
+                <div className="space-y-2">
+                  {taskItems.map((t) => {
+                    const isDone = done[t.id];
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => toggleTask(t.id)}
+                        className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
+                          isDone
+                            ? 'bg-[#3A8F6A]/10 border-[#3A8F6A]/30 text-[#607580]'
+                            : 'bg-[#F8FAF9] border-[#D9E8E7] hover:border-[#2A8588] text-[#153A5B]'
+                        }`}
+                      >
+                        {isDone ? <CheckCircle2 size={18} className="text-[#3A8F6A] shrink-0 mt-0.5" /> : <Circle size={18} className="text-[#607580] shrink-0 mt-0.5" />}
+                        <span className={`text-xs font-bold ${isDone ? 'line-through' : ''}`}>{t.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
+                  <h2 className="font-display font-extrabold text-base text-[#153A5B]">Support Case Status</h2>
+                  {activeCase ? (
+                    <div className="text-xs space-y-2 text-[#607580]">
+                      <div>
+                        <span className="font-bold text-[#153A5B] block">Active intervention:</span>
+                        <span>{INTERVENTION_TYPE_META[activeCase.type]?.label || activeCase.type.replace(/_/g, ' ')}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-[#153A5B] block">Status:</span>
+                        <span>{statusLabel(activeCase.status)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#607580]">No active support case right now.</p>
+                  )}
+                </div>
+
+                <StudentPulseChat />
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

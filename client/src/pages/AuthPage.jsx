@@ -3,249 +3,130 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import {
-  Waves,
   UserCheck,
   GraduationCap,
-  RefreshCw,
   Eye,
   EyeOff,
-  Upload,
   Lock,
-  ArrowRight,
-  Sparkles,
   ShieldCheck,
   Check,
   AlertCircle,
   X,
-  Phone,
-  Circle,
   KeyRound,
   Mail,
+  IdCard,
+  Users,
+  ArrowRight,
 } from 'lucide-react';
 
-function generateCaptcha() {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  let code = '';
-  for (let i = 0; i < 5; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+const ROLES_PREVIEW = [
+  { role: 'ADMIN', label: 'Administrator' },
+  { role: 'FACULTY', label: 'Faculty' },
+  { role: 'COUNSELOR', label: 'Counselor' },
+  { role: 'STUDENT', label: 'Student' },
+];
+
+function destinationForRole(role) {
+  return role === 'STUDENT' ? '/student-view' : '/';
 }
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { login, register, isAuthenticated, user, MOCK_TEACHER, MOCK_STUDENT } = useAuth();
+  const { login, register, isAuthenticated, initializing, role } = useAuth();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+  const [submitting, setSubmitting] = useState(false);
 
   // Log In Form State
-  const [loginRoll, setLoginRoll] = useState('FAC-8021');
-  const [loginPassword, setLoginPassword] = useState('password123');
-  const [loginRole, setLoginRole] = useState('TEACHER'); // 'TEACHER' | 'STUDENT'
-  const [loginCaptchaInput, setLoginCaptchaInput] = useState('');
-  const [loginCaptchaCode, setLoginCaptchaCode] = useState(generateCaptcha());
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register Form State
-  const [regFirstName, setRegFirstName] = useState('');
-  const [regMiddleName, setRegMiddleName] = useState('');
-  const [regLastName, setRegLastName] = useState('');
-  const [regRoll, setRegRoll] = useState('');
-  const [regRole, setRegRole] = useState('STUDENT'); // 'STUDENT' | 'TEACHER'
-  const [regMotherPhone, setRegMotherPhone] = useState('');
-  const [regFatherPhone, setRegFatherPhone] = useState('');
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regStudentId, setRegStudentId] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
-  const [regCaptchaInput, setRegCaptchaInput] = useState('');
-  const [regCaptchaCode, setRegCaptchaCode] = useState(generateCaptcha());
   const [showRegPassword, setShowRegPassword] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(null);
 
-  // Real-time Password Validation State
-  const isMinLength = regPassword.length >= 6;
+  const isMinLength = regPassword.length >= 8;
   const hasUppercase = /[A-Z]/.test(regPassword);
   const hasNumber = /[0-9]/.test(regPassword);
   const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(regPassword);
   const isPasswordValid = isMinLength && hasUppercase && hasNumber && hasSpecialChar;
   const isConfirmMatch = regPassword.length > 0 && regConfirmPassword.length > 0 && regPassword === regConfirmPassword;
 
-  // Real-time Mobile Validation State (Exactly 10 digits)
-  const isMotherPhoneValid = /^\d{10}$/.test(regMotherPhone);
-  const isFatherPhoneValid = /^\d{10}$/.test(regFatherPhone);
-
-  const handleMotherPhoneChange = (e) => {
-    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setRegMotherPhone(cleaned);
-  };
-
-  const handleFatherPhoneChange = (e) => {
-    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setRegFatherPhone(cleaned);
-  };
-
-  // Modal State
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-
   useEffect(() => {
-    setLoginCaptchaCode(generateCaptcha());
-    setRegCaptchaCode(generateCaptcha());
-  }, []);
-
-  const handleRefreshLoginCaptcha = () => {
-    setLoginCaptchaCode(generateCaptcha());
-    setLoginCaptchaInput('');
-  };
-
-  const handleRefreshRegCaptcha = () => {
-    setRegCaptchaCode(generateCaptcha());
-    setRegCaptchaInput('');
-  };
-
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.show('Photo file size must be less than 5MB', 'error');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-        toast.show('Profile photo uploaded cleanly!', 'success');
-      };
-      reader.readAsDataURL(file);
+    if (!initializing && isAuthenticated) {
+      navigate(destinationForRole(role), { replace: true });
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initializing, isAuthenticated, role]);
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-
-    if (loginCaptchaInput.toUpperCase() !== loginCaptchaCode) {
-      toast.show('Invalid CAPTCHA code. Please re-enter the code.', 'error');
-      handleRefreshLoginCaptcha();
-      return;
-    }
-
-    // Authenticate
-    const fullName = loginRole === 'TEACHER' ? 'Dr. Himani Kaur' : 'Rahul Mehta';
-    const loggedUser = {
-      id: loginRole === 'TEACHER' ? 'u-himani' : 's-101',
-      name: fullName,
-      rollNumber: loginRoll,
-      role: loginRole,
-      department: 'Computer Science',
-      email: `${loginRoll.toLowerCase()}@university.edu`,
-      avatar: avatarPreview,
-    };
-
-    login(loggedUser);
-    toast.show(`Welcome back, ${fullName}! Successfully logged in.`, 'success');
-
-    if (loginRole === 'TEACHER') {
-      navigate('/');
-    } else {
-      navigate('/student-view');
+    setSubmitting(true);
+    try {
+      const user = await login(loginEmail.trim(), loginPassword);
+      toast.show(`Welcome back, ${user.name}!`, 'success');
+      navigate(destinationForRole(user.role), { replace: true });
+    } catch (err) {
+      toast.show(err.message || 'Unable to log in. Please check your credentials.', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-
-    if (!regFirstName.trim() || !regLastName.trim() || !regRoll.trim()) {
-      toast.show('Please fill in all required fields marked with *', 'error');
-      return;
-    }
-
-    if (!isMotherPhoneValid) {
-      toast.show("Please enter a valid 10-digit mobile number for Mother's Mobile Number.", 'error');
-      return;
-    }
-
-    if (!isFatherPhoneValid) {
-      toast.show("Please enter a valid 10-digit mobile number for Father's Mobile Number.", 'error');
-      return;
-    }
-
-    if (!isPasswordValid) {
-      toast.show('Please satisfy all password requirements before creating an account.', 'error');
-      return;
-    }
-
-    if (!isConfirmMatch) {
-      toast.show('Confirm Password does not match Password.', 'error');
-      return;
-    }
-
-    if (regCaptchaInput.toUpperCase() !== regCaptchaCode) {
-      toast.show('Invalid CAPTCHA code. Please re-enter the code.', 'error');
-      handleRefreshRegCaptcha();
-      return;
-    }
-
-    const fullName = `${regFirstName.trim()} ${regMiddleName.trim() ? regMiddleName.trim() + ' ' : ''}${regLastName.trim()}`;
-    const newUser = {
-      id: `u-${Date.now()}`,
-      name: fullName,
-      firstName: regFirstName.trim(),
-      middleName: regMiddleName.trim(),
-      lastName: regLastName.trim(),
-      rollNumber: regRoll.trim(),
-      role: regRole,
-      motherPhone: regMotherPhone,
-      fatherPhone: regFatherPhone,
-      department: 'Computer Science',
-      email: `${regRoll.toLowerCase()}@university.edu`,
-      avatar: avatarPreview,
-    };
-
-    register(newUser);
-    toast.show(`Account created successfully for ${fullName}!`, 'success');
-
-    if (regRole === 'TEACHER') {
-      navigate('/');
-    } else {
-      navigate('/student-view');
+    setSubmitting(true);
+    try {
+      const created = await register({
+        name: regName.trim(),
+        email: regEmail.trim(),
+        password: regPassword,
+        studentId: regStudentId.trim() ? Number(regStudentId.trim()) : null,
+      });
+      toast.show(`Account created for ${created.name}. Please sign in to continue.`, 'success');
+      setActiveTab('login');
+      setLoginEmail(regEmail.trim());
+      setRegPassword('');
+      setRegConfirmPassword('');
+    } catch (err) {
+      toast.show(err.message || 'Unable to create your account.', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleQuickLogin = (persona) => {
-    if (persona === 'TEACHER') {
-      login(MOCK_TEACHER);
-      toast.show('Logged in as Dr. Himani Kaur (Teacher)', 'success');
-      navigate('/');
-    } else {
-      login(MOCK_STUDENT);
-      toast.show('Logged in as Rahul Mehta (Student)', 'success');
-      navigate('/student-view');
-    }
-  };
+  const inputClass = (valid) =>
+    `w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl px-3.5 py-2.5 font-bold focus:outline-none focus:ring-2 ${
+      valid === false
+        ? 'border-[#C84C4C] focus:ring-[#C84C4C]'
+        : 'border-[#D9E8E7] focus:ring-[#2A8588]'
+    }`;
 
   return (
     <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 text-[#153A5B]">
-      {/* Top Header Logo */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2 mb-6">
         <div className="inline-flex items-center justify-center mb-1">
           <img src="/academic-logo.png" alt="Academic Logo" className="w-20 h-20 object-contain drop-shadow-md" />
         </div>
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-[#153A5B] tracking-tight">
-            ArambhX
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-[#153A5B] tracking-tight">ArambhX</h1>
           <p className="text-xs font-mono font-bold text-[#2A8588] tracking-wider uppercase mt-0.5">
             Student Dropout & Intervention System
           </p>
         </div>
       </div>
 
-      {/* Main Form Container Card */}
       <div className="sm:mx-auto sm:w-full sm:max-w-xl">
         <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-          
-          {/* Two Tabs Toggle */}
           <div className="bg-[#EDF7F8] p-1.5 rounded-2xl border border-[#D9E8E7] flex items-center gap-1.5">
             <button
+              type="button"
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all text-center ${
                 activeTab === 'login'
@@ -255,8 +136,8 @@ export default function AuthPage() {
             >
               Log In
             </button>
-
             <button
+              type="button"
               onClick={() => setActiveTab('register')}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all text-center ${
                 activeTab === 'register'
@@ -264,84 +145,30 @@ export default function AuthPage() {
                   : 'text-[#607580] hover:text-[#153A5B]'
               }`}
             >
-              Sign In / Register
+              Register
             </button>
           </div>
 
-          {/* TAB 1: LOG IN */}
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-5 text-xs text-[#153A5B]">
-              
-              {/* Role Selector Toggle Chips */}
-              <div>
-                <label className="block text-[#153A5B] font-extrabold mb-2">
-                  Select Role: <span className="text-[#C84C4C]">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginRole('STUDENT');
-                      setLoginRoll('2024-CS-101');
-                    }}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-extrabold transition-all ${
-                      loginRole === 'STUDENT'
-                        ? 'bg-[#EDF7F8] border-[#2A8588] text-[#2A8588] shadow-sm'
-                        : 'bg-white border-[#D9E8E7] text-[#607580] hover:border-[#2A8588]'
-                    }`}
-                  >
-                    <GraduationCap size={16} />
-                    <span>Student</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginRole('TEACHER');
-                      setLoginRoll('FAC-8021');
-                    }}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-xs font-extrabold transition-all ${
-                      loginRole === 'TEACHER'
-                        ? 'bg-[#EDF7F8] border-[#2A8588] text-[#2A8588] shadow-sm'
-                        : 'bg-white border-[#D9E8E7] text-[#607580] hover:border-[#2A8588]'
-                    }`}
-                  >
-                    <UserCheck size={16} />
-                    <span>Teacher / Faculty</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Roll / Enrollment Number or Faculty ID */}
               <div>
                 <label className="block text-[#153A5B] font-bold mb-1.5">
-                  {loginRole === 'TEACHER' ? 'Faculty ID:' : 'Roll Number / Enrollment Number:'} <span className="text-[#C84C4C]">*</span>
+                  Email Address: <span className="text-[#C84C4C]">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={loginRoll}
-                  onChange={(e) => setLoginRoll(e.target.value)}
-                  placeholder={loginRole === 'TEACHER' ? 'e.g. FAC-8021' : 'e.g. 2024-CS-101'}
-                  className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3.5 py-2.5 font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588] placeholder-[#607580]"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="you@university.edu"
+                  className={inputClass()}
                 />
               </div>
 
-              {/* Password */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[#153A5B] font-bold">
-                    Password: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-xs font-bold text-[#2A8588] hover:underline flex items-center gap-1"
-                  >
-                    <KeyRound size={12} />
-                    <span>Forgot Password?</span>
-                  </button>
-                </div>
+                <label className="block text-[#153A5B] font-bold mb-1.5">
+                  Password: <span className="text-[#C84C4C]">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showLoginPassword ? 'text' : 'password'}
@@ -349,7 +176,7 @@ export default function AuthPage() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl pl-3.5 pr-10 py-2.5 font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588] placeholder-[#607580]"
+                    className={`${inputClass()} pr-10`}
                   />
                   <button
                     type="button"
@@ -359,242 +186,101 @@ export default function AuthPage() {
                     {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-
-
               </div>
 
-              {/* Visually Distinct CAPTCHA Box */}
-              <div className="space-y-2 bg-[#EDF7F8] border border-[#D9E8E7] p-3.5 rounded-2xl">
-                <label className="block text-[#153A5B] font-bold">
-                  CAPTCHA Code Verification: <span className="text-[#C84C4C]">*</span>
-                </label>
-
-                <div className="flex items-center gap-3">
-                  {/* CAPTCHA Display Box */}
-                  <div className="flex-1 bg-[#153A5B] text-white px-4 py-2 rounded-xl flex items-center justify-between font-mono tracking-widest text-lg font-black select-none shadow-inner">
-                    <span className="line-through decoration-[#2A8588] decoration-2">{loginCaptchaCode}</span>
-                    <button
-                      type="button"
-                      onClick={handleRefreshLoginCaptcha}
-                      className="p-1 rounded-lg hover:bg-white/10 text-[#2A8588] transition"
-                      title="Regenerate CAPTCHA Code"
-                    >
-                      <RefreshCw size={16} />
-                    </button>
-                  </div>
-
-                  {/* Input Field */}
-                  <input
-                    type="text"
-                    required
-                    value={loginCaptchaInput}
-                    onChange={(e) => setLoginCaptchaInput(e.target.value)}
-                    placeholder="Enter code"
-                    className="w-32 bg-[#FFFFFF] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-2 text-center font-mono font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
-                  />
-                </div>
-              </div>
-
-              {/* Log In Primary Button */}
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#2A8588] hover:bg-[#216B6D] text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-[#2A8588]/20 transition flex items-center justify-center gap-2"
+                disabled={submitting}
+                className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2 ${
+                  submitting
+                    ? 'bg-[#607580]/50 cursor-wait'
+                    : 'bg-[#2A8588] hover:bg-[#216B6D] shadow-[#2A8588]/20'
+                }`}
               >
                 <Lock size={16} />
-                <span>Log In</span>
+                <span>{submitting ? 'Signing in…' : 'Log In'}</span>
               </button>
 
-
-
+              <p className="text-center text-[11px] text-[#607580] font-medium">
+                New here?{' '}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('register')}
+                  className="font-extrabold text-[#2A8588] hover:underline inline-flex items-center gap-1"
+                >
+                  Register an account <ArrowRight size={12} />
+                </button>
+              </p>
             </form>
           )}
 
-          {/* TAB 2: SIGN IN / REGISTER */}
           {activeTab === 'register' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-4 text-xs text-[#153A5B]">
-              
-              {/* Profile Photo Avatar Upload */}
-              <div className="flex flex-col items-center justify-center space-y-2 pb-2">
-                <div className="relative group">
-                  <div className="w-20 h-20 rounded-full bg-[#EDF7F8] border-2 border-[#2A8588] flex items-center justify-center overflow-hidden shadow-md">
-                    {avatarPreview ? (
-                      <img src={avatarPreview} alt="Profile Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <Upload size={24} className="text-[#2A8588]" />
-                    )}
-                  </div>
-                  <label className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#2A8588] text-white cursor-pointer shadow hover:scale-110 transition">
-                    <Upload size={12} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
+              <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-2xl p-3.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-extrabold text-[#153A5B]">
+                  <ShieldCheck size={14} className="text-[#2A8588]" />
+                  <span>How are roles assigned?</span>
                 </div>
-                <span className="text-[11px] text-[#607580] font-medium">Upload Profile Photo (Optional)</span>
+                <p className="text-[11px] text-[#607580] font-medium leading-relaxed">
+                  Your role is decided automatically by the platform.
+                  Providing your student ID links the account to your student profile and registers you as a{' '}
+                  <span className="font-bold text-[#153A5B]">Student</span>. Without a student ID you are registered as{' '}
+                  <span className="font-bold text-[#153A5B]">Faculty</span>. Administrator and Counselor accounts are
+                  created by an existing Administrator.
+                </p>
               </div>
 
-              {/* Name Fields Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    First Name: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={regFirstName}
-                    onChange={(e) => setRegFirstName(e.target.value)}
-                    placeholder="e.g. Aarav"
-                    className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
-                  />
-                </div>
+              <div>
+                <label className="block text-[#153A5B] font-bold mb-1">
+                  Full Name: <span className="text-[#C84C4C]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  placeholder="e.g. Aarav Sharma"
+                  className={inputClass()}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">Middle Name:</label>
+              <div>
+                <label className="block text-[#153A5B] font-bold mb-1">
+                  Email Address: <span className="text-[#C84C4C]">*</span>
+                </label>
+                <div className="relative">
                   <input
-                    type="text"
-                    value={regMiddleName}
-                    onChange={(e) => setRegMiddleName(e.target.value)}
-                    placeholder="e.g. Kumar"
-                    className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Last Name: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <input
-                    type="text"
+                    type="email"
                     required
-                    value={regLastName}
-                    onChange={(e) => setRegLastName(e.target.value)}
-                    placeholder="e.g. Sharma"
-                    className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="you@university.edu"
+                    className={`${inputClass()} pr-9`}
                   />
+                  <Mail size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580]" />
                 </div>
               </div>
 
-              {/* Roll Number & Role Selector */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    {regRole === 'TEACHER' ? 'Faculty ID:' : 'Roll / Enrollment No:'} <span className="text-[#C84C4C]">*</span>
-                  </label>
+              <div>
+                <label className="block text-[#153A5B] font-bold mb-1">
+                  Student ID (optional): <span className="text-[#607580] font-medium">links you to your profile</span>
+                </label>
+                <div className="relative">
                   <input
-                    type="text"
-                    required
-                    value={regRoll}
-                    onChange={(e) => setRegRoll(e.target.value)}
-                    placeholder={regRole === 'TEACHER' ? 'e.g. FAC-8021' : 'e.g. 2024-CS-108'}
-                    className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
+                    type="number"
+                    min="1"
+                    value={regStudentId}
+                    onChange={(e) => setRegStudentId(e.target.value)}
+                    placeholder="e.g. 15 (numeric database ID)"
+                    className={`${inputClass()} pr-9`}
                   />
+                  <IdCard size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580]" />
                 </div>
-
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Role: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('STUDENT')}
-                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-all ${
-                        regRole === 'STUDENT'
-                          ? 'bg-[#EDF7F8] border-[#2A8588] text-[#2A8588]'
-                          : 'bg-white border-[#D9E8E7] text-[#607580]'
-                      }`}
-                    >
-                      Student
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('TEACHER')}
-                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-all ${
-                        regRole === 'TEACHER'
-                          ? 'bg-[#EDF7F8] border-[#2A8588] text-[#2A8588]'
-                          : 'bg-white border-[#D9E8E7] text-[#607580]'
-                      }`}
-                    >
-                      Teacher
-                    </button>
-                  </div>
-                </div>
+                <p className="mt-1 text-[11px] text-[#607580]">
+                  Leave blank to register as Faculty. Student registrations MUST reference a valid existing student.
+                </p>
               </div>
 
-              {/* Mandatory Parents' 10-Digit Mobile Numbers */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Mother's Mobile Number: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength={10}
-                    value={regMotherPhone}
-                    onChange={handleMotherPhoneChange}
-                    placeholder="10-digit mobile number"
-                    className={`w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl px-3 py-2 font-bold focus:outline-none focus:ring-2 ${
-                      regMotherPhone.length > 0
-                        ? isMotherPhoneValid
-                          ? 'border-[#3A8F6A] focus:ring-[#3A8F6A]'
-                          : 'border-[#C84C4C] focus:ring-[#C84C4C]'
-                        : 'border-[#D9E8E7] focus:ring-[#2A8588]'
-                    }`}
-                  />
-                  {regMotherPhone.length > 0 && !isMotherPhoneValid && (
-                    <div className="mt-1 text-[11px] font-bold text-[#C84C4C] flex items-center gap-1">
-                      <AlertCircle size={12} className="shrink-0" />
-                      <span>Please enter a valid 10-digit mobile number.</span>
-                    </div>
-                  )}
-                  {isMotherPhoneValid && (
-                    <div className="mt-1 text-[11px] font-bold text-[#3A8F6A] flex items-center gap-1">
-                      <Check size={12} className="stroke-[3] shrink-0" />
-                      <span>Valid 10-digit number</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Father's Mobile Number: <span className="text-[#C84C4C]">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength={10}
-                    value={regFatherPhone}
-                    onChange={handleFatherPhoneChange}
-                    placeholder="10-digit mobile number"
-                    className={`w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl px-3 py-2 font-bold focus:outline-none focus:ring-2 ${
-                      regFatherPhone.length > 0
-                        ? isFatherPhoneValid
-                          ? 'border-[#3A8F6A] focus:ring-[#3A8F6A]'
-                          : 'border-[#C84C4C] focus:ring-[#C84C4C]'
-                        : 'border-[#D9E8E7] focus:ring-[#2A8588]'
-                    }`}
-                  />
-                  {regFatherPhone.length > 0 && !isFatherPhoneValid && (
-                    <div className="mt-1 text-[11px] font-bold text-[#C84C4C] flex items-center gap-1">
-                      <AlertCircle size={12} className="shrink-0" />
-                      <span>Please enter a valid 10-digit mobile number.</span>
-                    </div>
-                  )}
-                  {isFatherPhoneValid && (
-                    <div className="mt-1 text-[11px] font-bold text-[#3A8F6A] flex items-center gap-1">
-                      <Check size={12} className="stroke-[3] shrink-0" />
-                      <span>Valid 10-digit number</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Passwords Input Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[#153A5B] font-bold mb-1">
@@ -607,13 +293,7 @@ export default function AuthPage() {
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="Enter password"
-                      className={`w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl pl-3 pr-9 py-2 font-bold focus:outline-none focus:ring-2 ${
-                        regPassword.length > 0
-                          ? isPasswordValid
-                            ? 'border-[#3A8F6A] focus:ring-[#3A8F6A]'
-                            : 'border-[#C84C4C] focus:ring-[#C84C4C]'
-                          : 'border-[#D9E8E7] focus:ring-[#2A8588]'
-                      }`}
+                      className={`${inputClass(regPassword.length > 0 ? isPasswordValid : undefined)} pr-9`}
                     />
                     <button
                       type="button"
@@ -636,13 +316,7 @@ export default function AuthPage() {
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
                       placeholder="Re-enter password"
-                      className={`w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl pl-3 pr-9 py-2 font-bold focus:outline-none focus:ring-2 ${
-                        regConfirmPassword.length > 0
-                          ? isConfirmMatch
-                            ? 'border-[#3A8F6A] focus:ring-[#3A8F6A]'
-                            : 'border-[#C84C4C] focus:ring-[#C84C4C]'
-                          : 'border-[#D9E8E7] focus:ring-[#2A8588]'
-                      }`}
+                      className={`${inputClass(regConfirmPassword.length > 0 ? isConfirmMatch : undefined)} pr-9`}
                     />
                     <button
                       type="button"
@@ -652,8 +326,6 @@ export default function AuthPage() {
                       {showRegPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
-
-                  {/* Real-time Confirm Password Feedback */}
                   {regConfirmPassword.length > 0 && (
                     <div className="mt-1 flex items-center gap-1 text-[11px] font-bold">
                       {isConfirmMatch ? (
@@ -672,184 +344,65 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              {/* REAL-TIME PASSWORD REQUIREMENTS HELPER BOX */}
               <div className="bg-[#EDF7F8] border border-[#D9E8E7] p-3.5 rounded-2xl space-y-2">
-                <span className="text-xs font-extrabold text-[#153A5B] block">
-                  Password must contain:
-                </span>
-
+                <span className="text-xs font-extrabold text-[#153A5B] block">Password must contain:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {/* Requirement 1: At least 6 characters */}
-                  <div
-                    className={`flex items-center gap-1.5 font-medium transition-colors ${
-                      isMinLength ? 'text-[#3A8F6A] font-bold' : 'text-[#607580]'
-                    }`}
-                  >
-                    {isMinLength ? (
-                      <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
-                    ) : (
-                      <Circle size={10} className="text-[#607580] shrink-0" />
-                    )}
-                    <span>At least 6 characters</span>
-                  </div>
-
-                  {/* Requirement 2: At least 1 uppercase letter (A–Z) */}
-                  <div
-                    className={`flex items-center gap-1.5 font-medium transition-colors ${
-                      hasUppercase ? 'text-[#3A8F6A] font-bold' : 'text-[#607580]'
-                    }`}
-                  >
-                    {hasUppercase ? (
-                      <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
-                    ) : (
-                      <Circle size={10} className="text-[#607580] shrink-0" />
-                    )}
-                    <span>At least 1 uppercase letter (A–Z)</span>
-                  </div>
-
-                  {/* Requirement 3: At least 1 number (0–9) */}
-                  <div
-                    className={`flex items-center gap-1.5 font-medium transition-colors ${
-                      hasNumber ? 'text-[#3A8F6A] font-bold' : 'text-[#607580]'
-                    }`}
-                  >
-                    {hasNumber ? (
-                      <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
-                    ) : (
-                      <Circle size={10} className="text-[#607580] shrink-0" />
-                    )}
-                    <span>At least 1 number (0–9)</span>
-                  </div>
-
-                  {/* Requirement 4: At least 1 special character */}
-                  <div
-                    className={`flex items-center gap-1.5 font-medium transition-colors ${
-                      hasSpecialChar ? 'text-[#3A8F6A] font-bold' : 'text-[#607580]'
-                    }`}
-                  >
-                    {hasSpecialChar ? (
-                      <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
-                    ) : (
-                      <Circle size={10} className="text-[#607580] shrink-0" />
-                    )}
-                    <span>At least 1 special character (e.g. @, #, $, %, !)</span>
-                  </div>
+                  <Requirement ok={isMinLength} text="At least 8 characters" />
+                  <Requirement ok={hasUppercase} text="At least 1 uppercase letter (A–Z)" />
+                  <Requirement ok={hasNumber} text="At least 1 number (0–9)" />
+                  <Requirement ok={hasSpecialChar} text="At least 1 special character (e.g. @, #, $, !)" />
                 </div>
               </div>
 
-              {/* CAPTCHA */}
-              <div className="space-y-1.5 bg-[#EDF7F8] border border-[#D9E8E7] p-3 rounded-2xl">
-                <label className="block text-[#153A5B] font-bold">
-                  CAPTCHA Verification: <span className="text-[#C84C4C]">*</span>
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-[#153A5B] text-white px-3 py-1.5 rounded-xl flex items-center justify-between font-mono tracking-widest text-base font-black select-none">
-                    <span className="line-through decoration-[#2A8588] decoration-2">{regCaptchaCode}</span>
-                    <button
-                      type="button"
-                      onClick={handleRefreshRegCaptcha}
-                      className="p-1 text-[#2A8588]"
-                      title="Regenerate CAPTCHA Code"
-                    >
-                      <RefreshCw size={14} />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={regCaptchaInput}
-                    onChange={(e) => setRegCaptchaInput(e.target.value)}
-                    placeholder="Code"
-                    className="w-28 bg-[#FFFFFF] border border-[#D9E8E7] text-[#153A5B] rounded-xl px-3 py-1.5 text-center font-mono font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
-                  />
-                </div>
-              </div>
-
-              {/* Create Account Button */}
               <button
                 type="submit"
-                disabled={!isPasswordValid || !isConfirmMatch || !isMotherPhoneValid || !isFatherPhoneValid}
+                disabled={submitting || !isPasswordValid || !isConfirmMatch}
                 className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2 ${
-                  isPasswordValid && isConfirmMatch && isMotherPhoneValid && isFatherPhoneValid
-                    ? 'bg-[#2A8588] hover:bg-[#216B6D] shadow-[#2A8588]/20 cursor-pointer'
-                    : 'bg-[#607580]/40 cursor-not-allowed'
+                  submitting || !isPasswordValid || !isConfirmMatch
+                    ? 'bg-[#607580]/40 cursor-not-allowed'
+                    : 'bg-[#2A8588] hover:bg-[#216B6D] shadow-[#2A8588]/20'
                 }`}
               >
                 <UserCheck size={16} />
-                <span>Create Account</span>
+                <span>{submitting ? 'Creating account…' : 'Create Account'}</span>
               </button>
-
             </form>
           )}
 
-        </div>
-      </div>
-
-      {/* Forgot Password Modal */}
-      {showForgotPassword && (
-        <div className="fixed inset-0 z-50 bg-[#153A5B]/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-[#153A5B]">
-            <div className="flex items-center justify-between border-b border-[#D9E8E7] pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#EDF7F8] border border-[#D9E8E7] flex items-center justify-center text-[#2A8588]">
-                  <KeyRound size={18} />
-                </div>
-                <h3 className="font-extrabold text-base text-[#153A5B]">Password Recovery & Reset</h3>
-              </div>
-              <button onClick={() => setShowForgotPassword(false)} className="text-[#607580] hover:text-[#153A5B] p-1">
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="text-xs text-[#607580] font-medium leading-relaxed">
-              Enter your Roll / Enrollment Number or registered University Email below. A password reset link will be sent to your recovery contacts.
-            </p>
-
-            <div>
-              <label className="block text-xs font-bold text-[#153A5B] mb-1">
-                Roll Number or Email: <span className="text-[#C84C4C]">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="e.g. 2024-CS-101 or himani.kaur@university.edu"
-                  className="w-full bg-[#F8FAF9] border border-[#D9E8E7] text-[#153A5B] rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#2A8588]"
-                />
-                <Mail size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580]" />
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#D9E8E7] text-[#607580] hover:bg-[#F8FAF9] font-bold text-xs transition"
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
+            {ROLES_PREVIEW.map((r) => (
+              <span
+                key={r.role}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EDF7F8] border border-[#D9E8E7] text-[10px] font-bold text-[#607580]"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!forgotEmail.trim()) {
-                    toast.show('Please enter your Roll Number or Email', 'error');
-                    return;
-                  }
-                  toast.show(`Password reset link sent for ${forgotEmail}`, 'success');
-                  setShowForgotPassword(false);
-                  setForgotEmail('');
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-[#2A8588] hover:bg-[#216B6D] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
-              >
-                <KeyRound size={14} />
-                <span>Send Reset Link</span>
-              </button>
-            </div>
+                <GraduationCap size={11} className="text-[#2A8588]" />
+                {r.label}
+              </span>
+            ))}
           </div>
         </div>
-      )}
-
+      </div>
     </div>
+  );
+}
+
+function Requirement({ ok, text }) {
+  return (
+    <div className={`flex items-center gap-1.5 font-medium transition-colors ${ok ? 'text-[#3A8F6A] font-bold' : 'text-[#607580]'}`}>
+      {ok ? (
+        <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
+      ) : (
+        <CircleDot size={10} className="text-[#607580] shrink-0" />
+      )}
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function CircleDot({ size = 10, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 10 10" fill="none" className={className}>
+      <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
   );
 }

@@ -1,116 +1,134 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, X, Send, ArrowRight } from 'lucide-react';
+import { api } from '@/services/api';
 import {
-  STUDENTS, ALL_STUDENT_SUMMARIES, ALERTS, INTERVENTIONS, INTERVENTION_OUTCOMES,
-  factorsForPrediction, recommendInterventions,
-} from '@/data/mockData';
+  fetchSummaries, mapAlert,
+  FACTOR_RULES, isOverdueIntervention,
+} from '@/services/data';
 import { RISK_META } from '@/lib/riskUtils';
 
 const SUGGESTED_PROMPTS = [
   'Who needs attention today?',
   'Which students are deteriorating fastest?',
-  'Why is Rahul at risk?',
+  'Why is a student at risk?',
   'Which interventions need follow-up?',
 ];
 
-function findStudentByName(text) {
+function findStudentByName(text, summaries) {
   const lower = text.toLowerCase();
-  return STUDENTS.find(s => lower.includes(s.name.toLowerCase()) || lower.includes(s.name.split(' ')[0].toLowerCase()));
+  return summaries.find(
+    (s) =>
+      s.student?.name &&
+      (lower.includes(s.student.name.toLowerCase()) ||
+        lower.includes((s.student.name.split(' ')[0] || '').toLowerCase()))
+  )?.student;
 }
 
-function buildAnswer(text, navigate) {
-  const lower = text.toLowerCase();
-  const student = findStudentByName(text);
+function factorsForStudent(mlFeatures) {
+  if (!Array.isArray(mlFeatures)) return [];
+  return mlFeatures
+    .map((f) => {
+      const rule = FACTOR_RULES.find((r) => r.key === (f.feature_id || f.featureId));
+      if (!rule) return null;
+      const v = f.feature_value ?? f.featureValue;
+      return `${rule.label} ${v}`;
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
 
-  if (student) {
-    const summary = ALL_STUDENT_SUMMARIES.find(s => s.student.id === student.id);
-    const factors = factorsForPrediction(summary.prediction.id).slice(0, 3);
-    if (lower.includes('why') || lower.includes('risk')) {
-      return {
-        text: `${student.name}'s risk is ${summary.prediction.risk_probability}% (${RISK_META[summary.prediction.risk_level].label}). Main contributing factors:`,
-        list: factors.map(f => `${f.feature_name} ${f.direction === 'NEGATIVE' ? '↓' : '↑'}${Math.abs(f.delta).toFixed(0)}%`),
-        actions: [
-          { label: 'View Risk Factors', onClick: () => navigate(`/students/${student.id}?tab=why`) },
-          { label: 'Recommend Intervention', onClick: () => navigate(`/interventions?student=${student.id}`) },
-          { label: 'Open Student', onClick: () => navigate(`/students/${student.id}`) },
-        ],
-      };
+async function buildAnswer(text, navigate, ctx) {
+  const lower = text.toLowerCase();
+  const { summaries, alerts } = ctx;
+
+  if (lower.includes('why is a student at risk') || lower.includes('at risk')) {
+    const student = findStudentByName(text.replace('why is a student at risk', 'tom'), summaries) || summaries[0]?.student;
+    if (!student) return { text: "No student data loaded yet." };
+    let factors = [];
+    try {
+      const res = await api.getStudentMlFeatures(student.id);
+      factors = factorsForStudent(res?.data?.mlFeatures);
+    } catch {
+      factors = [];
     }
-    if (lower.includes('intervention') || lower.includes('assign') || lower.includes('recommend')) {
-      const top = recommendInterventions(student.id)[0];
-      return {
-        text: `For ${student.name}, Pulse recommends "${top.label}" (${top.suitability}% suitability) — ${top.purpose}`,
-        actions: [{ label: 'Open Intervention Copilot', onClick: () => navigate(`/interventions?student=${student.id}`) }],
-      };
-    }
-    if (lower.includes('improve') || lower.includes('outcome')) {
-      const iv = INTERVENTIONS.find(i => i.student_id === student.id);
-      const outcome = iv && INTERVENTION_OUTCOMES.find(o => o.intervention_id === iv.id);
-      if (outcome) {
-        return {
-          text: `${student.name}'s risk moved from ${outcome.before_risk}% to ${outcome.after_risk}% after ${iv.intervention_label}. Outcome: ${outcome.outcome_classification.toLowerCase()}. This is an observed association, not a confirmed cause.`,
-          actions: [{ label: 'View Outcome', onClick: () => navigate(`/outcomes?student=${student.id}`) }],
-        };
-      }
-      return { text: `${student.name} doesn't have a completed intervention outcome yet.` };
-    }
+    const summary = summaries.find((s) => s.student?.id === student.id);
+    const meta = RISK_META[summary?.prediction?.risk_level] || RISK_META.LOW;
     return {
-      text: `${student.name} is currently ${RISK_META[summary.prediction.risk_level].label.toLowerCase()} risk at ${summary.prediction.risk_probability}%, with ${summary.openAlerts.length} open alert(s) and ${summary.activeInterventions.length} active intervention(s).`,
-      actions: [{ label: 'Open Student', onClick: () => navigate(`/students/${student.id}`) }],
+      text: `${student.name}'s risk is ${summary?.prediction?.probability ?? '—'}% (${meta.label}). Main contributing factors:`,
+      list: factors.length ? factors : [
+        `prediction history: ${summary?.history?.length || 0} cycle(s)`,
+        `velocity: ${summary?.velocity > 0 ? '+' : ''}${Math.round(summary?.velocity || 0)} pts`,
+      ],
+      actions: [
+        { label: 'View Risk Factors', onClick: () => navigate(`/students/${student.id}?tab=why`) },
+        { label: 'Open Student', onClick: () => navigate(`/students/${student.id}`) },
+      ],
     };
   }
 
   if (lower.includes('who needs attention') || lower.includes('attention today')) {
-    const top = [...ALL_STUDENT_SUMMARIES].sort((a, b) => b.priority - a.priority).slice(0, 4);
+    const top = [...summaries].sort((a, b) => b.priority - a.priority).slice(0, 4);
     return {
       text: 'These students need attention first, based on risk and how fast it is changing:',
-      list: top.map(s => `${s.student.name} — ${s.prediction.risk_probability}% risk, priority score ${s.priority}`),
+      list: top.map((s) => `${s.student?.name} — ${s.prediction?.probability ?? '—'}% risk, priority score ${Math.round(s.priority || 0)}`),
       actions: [{ label: 'Open Priority Queue', onClick: () => navigate('/students') }],
     };
   }
 
   if (lower.includes('deteriorating fastest') || lower.includes('fastest')) {
-    const top = [...ALL_STUDENT_SUMMARIES].sort((a, b) => b.velocity - a.velocity).slice(0, 4);
+    const top = [...summaries].sort((a, b) => (b.velocity || 0) - (a.velocity || 0)).slice(0, 4);
     return {
       text: 'Ranked by deterioration velocity since the last prediction cycle:',
-      list: top.map(s => `${s.student.name} — risk moved +${s.velocity} pts`),
+      list: top.map((s) => `${s.student?.name} — risk moved ${s.velocity > 0 ? '+' : ''}${Math.round(s.velocity || 0)} pts`),
       actions: [{ label: 'Open Risk Intelligence', onClick: () => navigate('/risk-intelligence') }],
     };
   }
 
   if (lower.includes('follow-up') || lower.includes('followup') || lower.includes('follow up')) {
-    const due = INTERVENTIONS.filter(iv => iv.follow_up_date && new Date(iv.follow_up_date) <= new Date()).slice(0, 5);
+    const due = summaries.flatMap((s) => (s.allInterventions || [])
+      .filter(isOverdueIntervention)
+      .map((iv) => ({ student: s.student, iv })));
     return {
-      text: `${due.length} interventions have a follow-up date that has passed:`,
-      list: due.map(iv => `${STUDENTS.find(s => s.id === iv.student_id)?.name} — ${iv.intervention_label}`),
+      text: `${due.length} active intervention(s) have a follow-up date that has passed:`,
+      list: due.slice(0, 5).map(({ student, iv }) => `${student?.name} — ${iv.intervention_type.replace(/_/g, ' ').toLowerCase()}`),
       actions: [{ label: 'Open Interventions', onClick: () => navigate('/interventions') }],
     };
   }
 
   if (lower.includes('compare')) {
     return {
-      text: 'You can compare up to three students side-by-side in Comparison Mode — attendance, marks, LMS activity and risk trend, with a summary of who should be prioritized.',
+      text: 'You can compare up to three students side-by-side in Comparison Mode — risk, trend, alerts and interventions, with a summary of who should be prioritized.',
       actions: [{ label: 'Open Comparison Mode', onClick: () => navigate('/students') }],
     };
   }
 
   if (lower.includes('alert')) {
-    const open = ALERTS.filter(a => a.status !== 'RESOLVED');
+    const open = (alerts || []).filter((a) => a.status !== 'RESOLVED');
     return {
-      text: `There are ${open.length} open alerts, including ${open.filter(a => a.alert_type === 'CRITICAL').length} critical and ${open.filter(a => a.alert_type === 'MULTI_FACTOR').length} multi-factor alerts.`,
+      text: `There are ${open.length} open alerts, including ${open.filter((a) => a.alertType === 'CRITICAL').length} critical and ${open.filter((a) => a.alertType === 'MULTI_FACTOR').length} multi-factor alerts.`,
       actions: [{ label: 'Open Smart Alerts', onClick: () => navigate('/alerts') }],
     };
   }
 
+  const student = findStudentByName(text, summaries);
+  if (student) {
+    const summary = summaries.find((s) => s.student?.id === student.id);
+    const meta = RISK_META[summary?.prediction?.risk_level] || RISK_META.LOW;
+    return {
+      text: `${student.name} is currently ${meta.label.toLowerCase()} risk at ${summary?.prediction?.probability ?? '—'}%, with ${summary?.openAlerts?.length || 0} open alert(s) and ${summary?.activeInterventions?.length || 0} active intervention(s).`,
+      actions: [{ label: 'Open Student', onClick: () => navigate(`/students/${student.id}`) }],
+    };
+  }
+
   return {
-    text: "I can help you find priority students, explain a risk change, recommend interventions, summarize alerts, or compare students. Try asking about a specific student by name.",
+    text: "I can find priority students, explain a risk change, recommend interventions, summarize alerts, or compare students. Try one of the suggestions below.",
   };
 }
 
 function Message({ role, content }) {
   if (role === 'user') {
-    return <div className="self-end max-w-[85%] rounded-2xl rounded-tr-sm bg-[#ede0dd] text-slate-100 px-3.5 py-2.5 text-sm">{content}</div>;
+    return <div className="self-end max-w-[85%] rounded-2xl rounded-tr-sm bg-[#ede0dd] text-slate-700 px-3.5 py-2.5 text-sm">{content}</div>;
   }
   return (
     <div className="self-start max-w-[92%] flex gap-2.5">
@@ -118,13 +136,13 @@ function Message({ role, content }) {
         <Sparkles size={12} className="text-[#fbf3f0]" />
       </div>
       <div className="flex-1">
-        <div className="panel-alt px-3.5 py-2.5 text-sm text-slate-200">
+        <div className="panel-alt px-3.5 py-2.5 text-sm text-slate-700">
           <p>{content.text}</p>
           {content.list && (
             <ul className="mt-2 space-y-1">
               {content.list.map((item, i) => (
-                <li key={i} className="text-slate-300 font-mono text-xs flex items-start gap-1.5">
-                  <span className="text-teal-400 mt-0.5">›</span>{item}
+                <li key={i} className="text-slate-600 font-mono text-xs flex items-start gap-1.5">
+                  <span className="text-teal-600 mt-0.5">›</span>{item}
                 </li>
               ))}
             </ul>
@@ -133,7 +151,7 @@ function Message({ role, content }) {
         {content.actions && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {content.actions.map((a, i) => (
-              <button key={i} onClick={a.onClick} className="chip text-xs px-2.5 py-1.5 rounded-full text-teal-300 flex items-center gap-1">
+              <button key={i} onClick={a.onClick} className="chip text-xs px-2.5 py-1.5 rounded-full text-teal-600 flex items-center gap-1">
                 {a.label} <ArrowRight size={11} />
               </button>
             ))}
@@ -146,25 +164,46 @@ function Message({ role, content }) {
 
 export default function PulseAIPanel({ open, onClose }) {
   const navigate = useNavigate();
+  const ctxRef = useRef({ summaries: [], alerts: [] });
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: { text: "I noticed 3 things that may need your attention today. Ask me anything about your students, risk factors, or interventions." } },
+    { role: 'assistant', content: { text: "I can help you find priority students, explain a risk change, or summarize alerts. Ask about your students in plain language." } },
   ]);
   const [input, setInput] = useState('');
+  const [ready, setReady] = useState(false);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [summaries, alertRes] = await Promise.all([
+          fetchSummaries(),
+          api.listAlerts({ page: 1, limit: 100 }),
+        ]);
+        if (!active) return;
+        ctxRef.current = {
+          summaries: summaries || [],
+          alerts: (alertRes?.data?.alerts || []).map(mapAlert),
+        };
+        setReady(true);
+      } catch {
+        if (active) setReady(true);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  function send(text) {
+  async function send(text) {
     const q = (text ?? input).trim();
-    if (!q) return;
+    if (!q || !ready) return;
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setInput('');
-    setTimeout(() => {
-      const answer = buildAnswer(q, navigate);
-      setMessages((m) => [...m, { role: 'assistant', content: answer }]);
-    }, 380);
+    const answer = await buildAnswer(q, navigate, ctxRef.current);
+    setMessages((m) => [...m, { role: 'assistant', content: answer }]);
   }
 
   return (
@@ -176,22 +215,22 @@ export default function PulseAIPanel({ open, onClose }) {
               <Sparkles size={14} className="text-[#fbf3f0]" />
             </div>
             <div>
-              <div className="text-sm font-display font-semibold text-slate-100">Pulse AI</div>
-              <div className="text-[10px] text-slate-400">Decision-support assistant</div>
+              <div className="text-sm font-display font-semibold text-slate-800">Pulse AI</div>
+              <div className="text-[10px] text-slate-500">Decision-support assistant</div>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/5">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100">
             <X size={16} />
           </button>
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-          {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} navigate={navigate} />)}
+          {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
         </div>
 
         <div className="px-4 pb-2 flex gap-1.5 flex-wrap shrink-0">
           {SUGGESTED_PROMPTS.map((p) => (
-            <button key={p} onClick={() => send(p)} className="chip text-[11px] px-2.5 py-1 rounded-full text-slate-300">
+            <button key={p} onClick={() => { if (ready) send(p); }} className="chip text-[11px] px-2.5 py-1 rounded-full text-slate-600">
               {p}
             </button>
           ))}
@@ -204,10 +243,10 @@ export default function PulseAIPanel({ open, onClose }) {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about a student, alert, or intervention…"
-            className="flex-1 bg-[#ffffff] border hairline rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-teal-400 outline-none"
+            placeholder={ready ? "Ask about a student, alert, or intervention…" : "Loading cohort…"}
+            className="flex-1 bg-[#ffffff] border hairline rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-teal-400 outline-none"
           />
-          <button type="submit" className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#7a5963', color: '#fbf3f0' }}>
+          <button type="submit" disabled={!ready} className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-40" style={{ background: '#7a5963', color: '#fbf3f0' }}>
             <Send size={15} />
           </button>
         </form>

@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Flame, TrendingUp, ArrowDownRight, BellRing, Stethoscope, ArrowRight, Sparkles } from 'lucide-react';
-import { CURRENT_USER, institutionalKpis, ALL_STUDENT_SUMMARIES, ALERTS } from '@/data/mockData';
+import { Users, Flame, TrendingUp, Activity, BellRing, Stethoscope, ArrowRight, Sparkles } from 'lucide-react';
 import { PageHeader, SectionCard } from '@/components/ui/Page';
 import KpiCard from '@/components/ui/KpiCard';
 import RiskLandscape from '@/components/charts/RiskLandscape';
 import RiskTrendChart from '@/components/charts/RiskTrendChart';
 import InterventionSnapshot from '@/components/charts/InterventionSnapshot';
-import { Skeleton } from '@/components/ui/States';
+import { Skeleton, ErrorState } from '@/components/ui/States';
+import { useAsyncData, fetchOverview, fetchAttentionStudents, fetchSummaries, buildCohortRiskTrend } from '@/services/data';
+import { useAuth } from '@/context/AuthContext';
 import { timeAgo } from '@/lib/riskUtils';
 
 function greeting() {
@@ -37,54 +38,71 @@ function AttentionFeedItem({ item, navigate }) {
 
 export default function Overview() {
   const navigate = useNavigate();
-  const kpis = institutionalKpis();
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 650);
-    return () => clearTimeout(t);
+  const { data, loading, error, reload } = useAsyncData(async () => {
+    const [overview, attention, summaries] = await Promise.all([
+      fetchOverview(),
+      fetchAttentionStudents(),
+      fetchSummaries(),
+    ]);
+    return { overview, attention, summaries };
   }, []);
 
-  const criticalRise = [...ALL_STUDENT_SUMMARIES].sort((a, b) => b.velocity - a.velocity)[0];
-  const followUps = ALERTS.filter(a => a.status === 'ASSIGNED').length;
-  const sustained = ALL_STUDENT_SUMMARIES.filter(s => s.velocity > 4).length;
-  const multiFactor = ALERTS.filter(a => a.alert_type === 'MULTI_FACTOR' && a.status !== 'RESOLVED')[0];
+  const trend = useMemo(() => (data ? buildCohortRiskTrend(data.summaries) : []), [data]);
 
-  const feed = [
-    criticalRise && {
-      color: '#C84C4C',
-      text: `${criticalRise.student.name}'s risk increased significantly (+${criticalRise.velocity} pts)`,
-      when: timeAgo(criticalRise.prediction.predicted_at),
-      to: `/students/${criticalRise.student.id}`,
-      actionLabel: 'Investigate',
-    },
-    {
+  const feed = [];
+  if (data) {
+    const { overview, attention, summaries } = data;
+
+    const criticalRiser = [...summaries]
+      .filter((s) => s.prediction)
+      .sort((a, b) => b.velocity - a.velocity)[0];
+
+    if (criticalRiser && criticalRiser.velocity !== 0) {
+      feed.push({
+        color: '#C84C4C',
+        text: `${criticalRiser.student.name}'s risk changed sharply (+${criticalRiser.velocity} pts)`,
+        when: timeAgo(criticalRiser.prediction.predicted_at),
+        to: `/students/${criticalRiser.student.id}`,
+        actionLabel: 'Investigate',
+      });
+    }
+
+    if (attention.length > 0) {
+      feed.push({
+        color: '#D96B4A',
+        text: `${attention.length} student${attention.length === 1 ? '' : 's'} currently require${attention.length === 1 ? 's' : ''} attention`,
+        when: 'Based on the latest prediction cycle',
+        to: '/students',
+        actionLabel: 'Review',
+      });
+    }
+
+    feed.push({
       color: '#D9922B',
-      text: `${followUps} interventions require follow-up`,
+      text: `${overview.interventionsActive} intervention${overview.interventionsActive === 1 ? '' : 's'} are currently active`,
       when: 'Updated just now',
       to: '/interventions',
       actionLabel: 'Follow Up',
-    },
-    {
-      color: '#D96B4A',
-      text: `${sustained} students show sustained deterioration`,
-      when: 'Across the last prediction cycle',
-      to: '/students',
-      actionLabel: 'Review',
-    },
-    multiFactor && {
-      color: '#C84C4C',
-      text: `New multi-factor alert detected for ${ALL_STUDENT_SUMMARIES.find(s => s.student.id === multiFactor.student_id)?.student.name}`,
-      when: timeAgo(multiFactor.created_at),
-      to: `/alerts?id=${multiFactor.id}`,
-      actionLabel: 'Assign',
-    },
-  ].filter(Boolean);
+    });
+
+    const multiFactor = (overview.recentAlerts || []).find(
+      (a) => a.alert_type === 'MULTI_FACTOR' && a.status !== 'RESOLVED'
+    );
+    if (multiFactor) {
+      feed.push({
+        color: '#C84C4C',
+        text: `New multi-factor alert detected for ${multiFactor.student_name}`,
+        when: timeAgo(multiFactor.created_at),
+        to: `/alerts?id=${multiFactor.id}`,
+        actionLabel: 'Assign',
+      });
+    }
+  }
 
   return (
     <div className="space-y-6">
-      
-      {/* Dedicated Clean Greeting Banner Section */}
       <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -92,7 +110,7 @@ export default function Overview() {
               Faculty Command Center
             </div>
             <h1 className="font-display text-3xl font-black text-[#153A5B] tracking-tight">
-              {greeting()}, {CURRENT_USER.name.split(' ').slice(0, 2).join(' ')}
+              {greeting()}, {(user?.name || 'Faculty').split(' ').slice(0, 2).join(' ')}
             </h1>
             <p className="text-sm text-[#607580] font-medium mt-1">
               Here's what needs your attention today across all monitored academic tracks.
@@ -112,54 +130,66 @@ export default function Overview() {
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[92px]" />)}
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Could not load the dashboard"
+          description={error.message || 'Please try again in a moment.'}
+          onRetry={() => reload({ force: true })}
+        />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-          <KpiCard label="Total Students" value={kpis.total} icon={Users} accent="#2A8588" delay={0} />
-          <KpiCard label="Critical Risk" value={kpis.critical} icon={Flame} accent="#C84C4C" delay={60} />
-          <KpiCard label="High Risk" value={kpis.high} icon={TrendingUp} accent="#D96B4A" delay={120} />
-          <KpiCard label="Deteriorating" value={kpis.deteriorating} icon={ArrowDownRight} accent="#D9922B" delay={180} />
-          <KpiCard label="Active Alerts" value={kpis.activeAlerts} icon={BellRing} accent="#2A8588" delay={240} />
-          <KpiCard label="Active Interventions" value={kpis.interventions} icon={Stethoscope} accent="#2A8588" delay={300} />
-        </div>
-      )}
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            <KpiCard label="Total Students" value={data.overview.total} icon={Users} accent="#2A8588" delay={0} />
+            <KpiCard label="High Risk" value={data.overview.highRisk} icon={Flame} accent="#C84C4C" delay={60} />
+            <KpiCard label="Medium Risk" value={data.overview.mediumRisk} icon={TrendingUp} accent="#D96B4A" delay={120} />
+            <KpiCard label="ML Analyzed" value={data.overview.withPredictions} icon={Activity} accent="#D9922B" delay={180} />
+            <KpiCard label="Active Alerts" value={data.overview.alertsActive} icon={BellRing} accent="#2A8588" delay={240} />
+            <KpiCard label="Active Interventions" value={data.overview.interventionsActive} icon={Stethoscope} accent="#2A8588" delay={300} />
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <SectionCard
-            title="Risk Landscape"
-            subtitle="Every student, positioned by risk and how fast it's changing"
-          >
-            <RiskLandscape />
-          </SectionCard>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <SectionCard
+                title="Risk Landscape"
+                subtitle="Every student, positioned by risk and how fast it's changing"
+              >
+                <RiskLandscape summaries={data.summaries} />
+              </SectionCard>
 
-          <SectionCard
-            title="Historical Risk Trajectory"
-            subtitle="Overall cohort risk distribution over recent evaluation cycles"
-          >
-            <RiskTrendChart />
-          </SectionCard>
-        </div>
-
-        <div className="space-y-6">
-          <SectionCard
-            title="Smart Attention Feed"
-            subtitle="What changed since your last visit"
-          >
-            <div className="divide-y divide-[#D9E8E7]">
-              {feed.map((item, i) => (
-                <AttentionFeedItem key={i} item={item} navigate={navigate} />
-              ))}
+              <SectionCard
+                title="Historical Risk Trajectory"
+                subtitle="Cohort average risk over the last prediction cycles"
+              >
+                <RiskTrendChart data={trend} />
+              </SectionCard>
             </div>
-          </SectionCard>
 
-          <SectionCard
-            title="Active Interventions Snapshot"
-            subtitle="Breakdown of support workflows currently underway"
-          >
-            <InterventionSnapshot />
-          </SectionCard>
-        </div>
-      </div>
+            <div className="space-y-6">
+              <SectionCard
+                title="Smart Attention Feed"
+                subtitle="What changed since your last visit"
+              >
+                <div className="divide-y divide-[#D9E8E7]">
+                  {feed.length === 0 ? (
+                    <p className="text-xs text-[#607580] py-3">Nothing urgent to surface right now.</p>
+                  ) : (
+                    feed.map((item, i) => (
+                      <AttentionFeedItem key={i} item={item} navigate={navigate} />
+                    ))
+                  )}
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title="Active Interventions Snapshot"
+                subtitle="Breakdown of support workflows currently underway"
+              >
+                <InterventionSnapshot counts={data.overview.interventionsByStatus} />
+              </SectionCard>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

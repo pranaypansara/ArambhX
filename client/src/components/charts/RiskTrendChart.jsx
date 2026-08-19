@@ -1,18 +1,17 @@
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { institutionalRiskTrend } from '@/data/mockData';
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="panel-alt px-3 py-2 text-xs">
-      <div className="text-slate-400 mb-0.5">{label}</div>
-      <div className="text-slate-100 font-mono font-medium">{payload[0].value}% avg. risk</div>
+      <div className="text-slate-500 mb-0.5">{label}</div>
+      <div className="text-slate-700 font-mono font-medium">{payload[0].value}% avg. risk</div>
     </div>
   );
 }
 
-export default function RiskTrendChart() {
-  const data = institutionalRiskTrend();
+/** Cohort average risk over the latest N prediction cycles. */
+export default function RiskTrendChart({ data = [] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
@@ -24,7 +23,7 @@ export default function RiskTrendChart() {
         </defs>
         <CartesianGrid stroke="#f3e7e4" vertical={false} />
         <XAxis dataKey="period" tick={{ fill: '#a98f95', fontSize: 11, fontFamily: 'IBM Plex Mono' }} axisLine={{ stroke: '#e6d3d6' }} tickLine={false} />
-        <YAxis tick={{ fill: '#a98f95', fontSize: 11, fontFamily: 'IBM Plex Mono' }} axisLine={false} tickLine={false} width={36} domain={[0, 60]} />
+        <YAxis tick={{ fill: '#a98f95', fontSize: 11, fontFamily: 'IBM Plex Mono' }} axisLine={false} tickLine={false} width={36} domain={[0, 100]} />
         <Tooltip content={<CustomTooltip />} />
         <Area
           type="monotone" dataKey="avgRisk" stroke="#c98f9f" strokeWidth={2.5}

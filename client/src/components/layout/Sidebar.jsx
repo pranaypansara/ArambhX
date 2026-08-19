@@ -1,12 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, Users, Activity, BellRing, Stethoscope, LineChart,
-  Bell, FileBarChart2, Sparkles, Settings, GraduationCap, LogOut,
+  Bell, FileBarChart2, Sparkles, Settings, GraduationCap, LogOut, ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 
-const TEACHER_NAV = [
+const STAFF_NAV = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
   { to: '/students', label: 'Students', icon: Users },
   { to: '/risk-intelligence', label: 'Risk Intelligence', icon: Activity },
@@ -19,13 +19,19 @@ const TEACHER_NAV = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const ADMIN_NAV = [
+  ...STAFF_NAV.slice(0, 6),
+  { to: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
+  ...STAFF_NAV.slice(6),
+];
+
 const STUDENT_NAV = [
   { to: '/student-view', label: 'My Academic Dashboard', icon: GraduationCap, end: true },
   { to: '/notifications', label: 'My Alerts & Notifications', icon: Bell },
 ];
 
 export default function Sidebar({ mobileOpen, onCloseMobile }) {
-  const { user, isTeacher, logout } = useAuth();
+  const { user, role, isStaff, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -35,7 +41,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
     navigate('/login');
   };
 
-  const navItems = isTeacher ? TEACHER_NAV : STUDENT_NAV;
+  const navItems = isStaff ? (role === 'ADMIN' ? ADMIN_NAV : STAFF_NAV) : STUDENT_NAV;
 
   return (
     <>
@@ -82,7 +88,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         </nav>
 
         <div className="p-3 space-y-2" style={{ borderTop: '1px solid #D9E8E7' }}>
-          {isTeacher && (
+          {isStaff && (
             <NavLink
               to="/student-view"
               onClick={onCloseMobile}
@@ -103,6 +109,13 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
             <LogOut size={15} />
             <span>Sign Out</span>
           </button>
+
+          {user && (
+            <div className="px-3 pt-1 text-[10px] font-mono font-bold text-[#607580] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3A8F6A]" />
+              {user.name} · {role}
+            </div>
+          )}
         </div>
       </aside>
     </>
