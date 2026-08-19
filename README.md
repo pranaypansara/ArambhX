@@ -1,111 +1,242 @@
-# ARAMBH ASCEND — Student Pulse
+# 🎓 AARAMBH ASCEND™
 
-AI-powered Academic Dropout Prediction & Intervention System — frontend.
+An AI-powered decision-support system designed to identify students at risk of dropping out and enable educational institutions to take proactive, early intervention steps.
 
-Built with React 19 + Vite + Tailwind CSS v4 + react-router-dom + recharts + lucide-react.
+[![SIH](https://img.shields.io/badge/Smart%20India%20Hackathon-2024%2F2026-blue.svg)](https://sih.gov.in/)
+[![SDG 4](https://img.shields.io/badge/SDG%204-Quality%20Education-E5243B.svg)](https://sdgs.un.org/goals/goal4)
+[![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20FastAPI-green.svg)](#-tech-stack)
 
-## Getting started
+---
+
+## 📌 Problem Statement
+
+Students rarely drop out without warning. They consistently demonstrate subtle behavioral and academic shifts long before making the decision to leave:
+
+* 📉 **Declining Academic Performance:** Gradual drops in quiz and exam grades.
+* 💤 **Low Platform Engagement:** Decreased access to LMS materials and lectures.
+* ⏰ **Assignment Delays:** Late submissions and missed deadlines.
+* 📊 **Inconsistent Activity:** Spiky or decaying interaction patterns over time.
+
+Because these critical signals are fragmented across disconnected institutional systems (LMS, examination portals, registrar records), faculty members often miss them until it is too late. **AARAMBH ASCEND™** aggregates and analyzes these multi-source signals in real time to deliver actionable early warnings.
+
+---
+
+## 🎯 Key Features & Functionality
+
+* **Multi-Source Data Aggregation:** Seamlessly ingests student academic records, assignment histories, and LMS telemetry.
+* **Automated Feature Engineering:** Transforms raw interaction logs into ML-ready behavioral indicators.
+* **Predictive Risk Scoring:** Uses machine learning models to calculate precise dropout probabilities.
+* **Risk Intelligence & History:** Tracks risk trends over time to see if a student is improving or deteriorating.
+* **Smart Alerts & Interventions:** Automatically flags vulnerable students and tracks faculty-led intervention outcomes.
+* **Human-in-the-Loop Design:** Serves strictly as a decision-support aid for educators rather than an automated grading or disciplinary tool.
+
+---
+
+## 🏗 System Architecture
+
+**AARAMBH ASCEND™** employs a decoupled architecture, separating the core API layer from the dedicated Python ML inference pipeline to ensure scalability and independent model deployment.
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                        React + Vite UI                          │
+└────────────────────────────────┌────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Node.js + Express API                       │
+│  (Auth, Business Logic, Raw Parameterized SQL, Feature Builder) │
+└──────────────┬──────────────────────────────────┬───────────────┘
+               │                                  │
+               ▼                                  ▼
+┌──────────────────────────────┐  ┌───────────────────────────────┐
+│     Neon PostgreSQL DB       │  │      FastAPI ML Service       │
+│  (Student Data & Analytics)  │  │   (Model Inference & Schema)  │
+└──────────────────────────────┘  └───────────────────────────────┘
+
+```
+
+### End-to-End Prediction Flow
+
+```text
+[ Select Student ID ] ──► [ Fetch Neon DB Records ] ──► [ Build ML Feature Payload ]
+                                                                   │
+[ Trigger Interventions ] ◄── [ Store Risk Score ] ◄── [ Execute ML Model In FastAPI ]
+
+```
+
+---
+
+## 💻 Tech Stack
+
+| Domain | Technologies |
+| --- | --- |
+| **Frontend** | React, Vite, TypeScript, Tailwind CSS / UI Libraries |
+| **Backend API** | Node.js, Express, TypeScript |
+| **Database** | Neon PostgreSQL (Raw Parameterized SQL) |
+| **Machine Learning** | Python, FastAPI, Scikit-learn, Pandas, NumPy |
+| **Tooling & Ops** | Git, npm, Uvicorn |
+
+---
+
+## 📂 Project Structure
+
+```text
+ARAMBH-ASCEND/
+├── client/                         # React Frontend Application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── server/                         # Main Node.js Backend
+│   ├── src/
+│   │   ├── config/                 # DB & App Configurations
+│   │   ├── controllers/            # API Route Handlers
+│   │   ├── middleware/             # Auth & Validation
+│   │   ├── routes/                 # Express Routes
+│   │   ├── services/               # Feature Builder & Logic
+│   │   └── types/                  # TypeScript Interfaces
+│   │
+│   └── ml/
+│       ├── source/                 # Local ML Training Workspace (Git-ignored)
+│       └── service/                # Deployment-ready FastAPI Service
+│           ├── main.py             # FastAPI Application Entrypoint
+│           ├── requirements.txt    # Python Dependencies
+│           └── app/                # Models, Schemas, & Prediction Services
+│
+├── README.md
+└── .gitignore
+
+```
+
+---
+
+## 📊 Data & Model Features
+
+The system computes features across four primary dimensions to assess risk:
+
+1. **Demographic & Background:** Gender, region, age band, previous attempts, studied credits, disability status.
+2. **Academic Performance:** Assessment scores, quiz completion rates, ratio of missed tests.
+3. **Submission Behavior:** Late submission frequency, average delay in days, status history.
+4. **LMS Engagement:** Total clicks, active learning days, platform activity frequency, decay rates.
+
+---
+
+## 🗺 Development Roadmap
+
+| Phase | Description | Status |
+| --- | --- | --- |
+| **01** | Core Backend Foundation & Node Setup | ✅ Completed |
+| **02** | Neon PostgreSQL Schema & DB Integration | ✅ Completed |
+| **03** | Automated ML Feature Builder Pipeline | ✅ Completed |
+| **04** | Synthetic Test Data & Seed Scripts | ✅ Completed |
+| **05** | Standalone FastAPI Prediction Microservice | 🚧 In Progress |
+| **06** | Express-to-FastAPI Integration | ⏳ Planned |
+| **07** | Historical Prediction Storage & Auditing | ⏳ Planned |
+| **08** | ML2 Risk Intelligence Engine | ⏳ Planned |
+| **09** | Automated Smart Alerts | ⏳ Planned |
+| **10** | Intervention Recommendation & Outcome Tracker | ⏳ Planned |
+| **11** | Faculty & Administrator Analytics Dashboards | ⏳ Planned |
+| **12** | Complete System Audit Logs & Role Permissions | ⏳ Planned |
+| **13** | E2E Testing, Optimization & Demo Readiness | ⏳ Planned |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+* Node.js (v18+)
+* Python (v3.9+)
+* Neon PostgreSQL Account (or local Postgres instance)
+
+---
+
+### 1. Repository Setup
 
 ```bash
+git clone [https://github.com/your-username/ARAMBH-ASCEND.git](https://github.com/your-username/ARAMBH-ASCEND.git)
+cd ARAMBH-ASCEND
+
+```
+
+---
+
+### 2. Frontend Setup
+
+```bash
+cd client
 npm install
-npm run dev      # start local dev server
-npm run build    # production build to /dist
-```
-
-## Project structure
+npm run dev
 
 ```
-src/
-  data/mockData.js         # mock data shaped 1:1 to the Postgres/Neon schema
-                            # (users, students, attendance_records, academic_records,
-                            # predictions, prediction_factors, alerts, interventions,
-                            # intervention_outcomes, notifications). Swap this module
-                            # for real fetch() calls against the Express API and the
-                            # rest of the app needs no changes.
-  lib/riskUtils.js          # risk-level colors, date/time formatting helpers
-  components/
-    layout/                 # Sidebar, Topbar, AppShell (routing outlet + Pulse AI launcher)
-    ui/                     # KpiCard, RiskBadge, RiskGauge, TrendIndicator, StudentAvatar,
-                             # Skeleton/EmptyState/ErrorState, Toast, Modal/Drawer, Page headers
-    charts/                  # RiskLandscape (signature scatter), RiskTrendChart, ShapChart,
-                              # StudentRiskLine, InterventionSnapshot
-    student/                 # RiskJourneyTimeline
-    ai/                      # PulseAIPanel (floating chat), ProactiveInsights
-  pages/                     # one file per screen (see below)
+
+---
+
+### 3. Backend Setup
+
+```bash
+cd ../server
+npm install
+
 ```
 
-## Screens implemented
+Create a `.env` file inside the `server/` directory:
 
-| # | Screen | Route |
-|---|--------|-------|
-| 01 | Faculty Command Center | `/` |
-| 02 | Student Priority Queue | `/students` |
-| 03 | Student Profile / Risk Story | `/students/:id` |
-| 04 | Why Did This Change? explorer | `/students/:id?tab=why` |
-| 05 | Multi-Factor Alert Detective | `/alerts` |
-| 06 | Intervention Copilot | `/interventions` (Copilot tab) |
-| 07 | Intervention Workflow | `/interventions` (Workflow tab) |
-| 08 | Intervention Impact Loop | `/outcomes` (Impact Loop tab) |
-| 09 | Adaptive Escalation | `/outcomes` (Escalation tab) |
-| 10 | Student Comparison Mode | `/comparison` |
-| 11 | Smart Notification Center | `/notifications` |
-| 12/13 | Pulse AI + Proactive Insights | `/pulse-ai` (+ floating panel everywhere) |
-| 14 | Reports & Analytics | `/reports` |
-| — | Risk Intelligence (institutional view) | `/risk-intelligence` |
-| — | Settings | `/settings` |
-| — | Student-facing dashboard | `/student-view` |
+```env
+PORT=5000
+DATABASE_URL=postgresql://user:password@ep-example-123456.neon.tech/neondb?sslmode=require
+ML_SERVICE_URL=http://localhost:8000
 
-## Design system
+```
 
-- **Palette**: deep navy/teal foundation (`--color-void`, `--color-deep`, `--color-panel`),
-  teal/cobalt accents, restrained lime (positive), amber (warning), coral (critical).
-- **Type**: Sora (display/headings), IBM Plex Sans (body), IBM Plex Mono (all data — risk
-  scores, percentages, IDs, timestamps) — set up in `src/index.css` via `@theme`.
-- **Signature visual**: the Risk Landscape (`components/charts/RiskLandscape.jsx`) is a
-  hand-built SVG scatter — risk probability × deterioration velocity, quadrant-labeled,
-  with a short "comet trail" behind each node hinting at recent trajectory.
-- Motion: CSS-only (count-up KPIs, animated risk gauges/lines, skeleton shimmer, node-in
-  stagger on the scatter plot) — no animation library dependency.
-- A high-contrast theme toggle lives in the top nav (moon/sun icon) alongside a Settings
-  shortcut, satisfying the "theme/settings controls" requirement without undermining the
-  intentional dark palette.
+Start the backend development server:
 
-## Interactive/workflow features worth knowing about
+```bash
+npm run dev
 
-- **Priority Queue** filters on risk level, department, semester, risk trend, alert type,
-  and intervention status, plus five sort modes including "Intervention overdue." Priority
-  score is a blend of risk + deterioration velocity + open-alert count — not raw risk — so
-  a fast-deteriorating student can rank above a higher but stable one, per the brief.
-- **Intervention Workflow** is editable: click any row to open a drawer and update status
-  and notes (state lives in-memory; wire to a `PATCH /api/interventions/:id` call when the
-  backend is ready).
-- **Confirmation dialogs** guard the two irreversible actions in the demo (Resolve Alert,
-  Escalate Case) using the shared `Modal` component.
-- **Reports** has a working CSV export (`Export student risk summary`) built from the same
-  mock data — swap `downloadCsv` for a real endpoint call if you want server-generated
-  exports instead.
-- **Student-facing dashboard** (`/student-view`) never surfaces a raw risk percentage —
-  it shows a composite "Overall Progress" status (On Track / Needs Attention / In Recovery)
-  instead, plus its own lightweight Pulse AI chat scoped to supportive, actionable language.
+```
 
-## Connecting to the real backend
+---
 
-Replace the exports in `src/data/mockData.js` with `fetch()` calls to your
-Node/Express + pg + Neon API (e.g. `GET /api/students`, `GET /api/predictions/:studentId`,
-etc.), keeping the same shapes. Every page/component consumes these functions rather than
-raw arrays, so the swap is localized to that one file plus adding loading/error states
-where the `Skeleton`/`ErrorState` components already exist as placeholders (see Overview.jsx
-for an example of the loading-skeleton pattern already wired up).
+### 4. ML Service Setup
 
-## Known trade-offs (given competition timeline)
+```bash
+cd ml/service
 
-- Pulse AI is currently a rule-based assistant over the in-memory mock data (pattern
-  matching on the question + student names) — structured so a real LLM/RAG backend call
-  can be dropped into `buildAnswer()` in `PulseAIPanel.jsx` without changing the UI.
-- No auth flow is wired up yet (role is fixed to the mock `CURRENT_USER`); the `users`
-  table and RBAC concept are modeled in the data layer so this is straightforward to add.
-- The `ErrorState` component exists in the shared UI kit but isn't triggered anywhere live,
-  since all data is synchronous mock data with nothing that can fail — wire it up alongside
-  real API calls (a fetch `catch` block is the natural place).
-- Bundle is a single chunk (~776 KB / ~224 KB gzip) — fine for a demo; route-based
-  `React.lazy` code-splitting is a quick follow-up if needed.
+# Create and activate virtual environment
+python -m venv venv
+
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch FastAPI service
+uvicorn main:app --reload --port 8000
+
+```
+
+#### ML Endpoint Diagnostics
+
+* **Health Check:** `GET http://localhost:8000/health`
+* **Run Inference:** `POST http://localhost:8000/predict`
+
+---
+
+## 🌐 Alignment with UN SDG 4
+
+> **Target 4.1 & 4.3:** Ensuring equitable, inclusive, and quality education for all.
+
+By transforming reactive administration into **proactive support**, AARAMBH ASCEND™ equips schools and universities with early visibility—preventing unnecessary dropouts and keeping students on track toward graduation.
+
+---
+
+## 🔒 Responsible AI & Privacy
+
+* **Decision Support, Not Automation:** Dropout probabilities are designed purely to guide faculty review. No automated academic actions are taken against students.
+* **Data Security:** All raw DB connections utilize SSL (`neon.tech`), parameterized SQL queries to prevent injection attacks, and strict role-based access control (RBAC).
+
+---
