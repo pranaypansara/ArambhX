@@ -18,22 +18,22 @@ function useCountUp(target, duration = 900) {
   return val;
 }
 
-export default function KpiCard({ label, value, icon: Icon, accent = '#7a5963', delay = 0, suffix = '' }) {
+export default function KpiCard({ label, value, icon: Icon, accent = '#2A8588', delay = 0, suffix = '' }) {
   const animated = useCountUp(value);
   return (
     <div
-      className="panel p-4 count-up flex flex-col gap-3 min-w-0"
+      className="panel p-4 count-up flex flex-col gap-3 min-w-0 bg-white border border-[#D9E8E7] shadow-sm rounded-2xl"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-wider text-slate-400 font-medium">{label}</span>
+        <span className="text-[11px] uppercase tracking-wider text-[#607580] font-extrabold">{label}</span>
         {Icon && (
-          <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: `${accent}1f`, color: accent }}>
+          <div className="w-7 h-7 rounded-md flex items-center justify-center font-bold" style={{ background: `${accent}1f`, color: accent }}>
             <Icon size={14} />
           </div>
         )}
       </div>
-      <div className="font-mono text-3xl font-semibold text-slate-50 tabular-nums">
+      <div className="font-mono text-3xl font-black text-[#153A5B] tabular-nums">
         {animated}{suffix}
       </div>
     </div>

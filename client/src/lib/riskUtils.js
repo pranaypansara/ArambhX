@@ -1,12 +1,12 @@
 export const RISK_META = {
-  STABLE: { label: 'Stable', color: '#9fe066', dim: '#5f8a34', text: 'text-lime-300' },
-  WATCH: { label: 'Watch', color: '#eaa73f', dim: '#8f6521', text: 'text-amber-300' },
-  DETERIORATING: { label: 'Deteriorating', color: '#f2884f', dim: '#95522b', text: 'text-orange-300' },
-  CRITICAL: { label: 'Critical', color: '#ef6355', dim: '#8f342a', text: 'text-rose-300' },
+  STABLE: { label: 'Stable', color: '#3A8F6A', dim: '#2D7053', text: 'text-[#3A8F6A]' },
+  WATCH: { label: 'Watch', color: '#D9922B', dim: '#B8781E', text: 'text-[#D9922B]' },
+  DETERIORATING: { label: 'Deteriorating', color: '#D96B4A', dim: '#B55235', text: 'text-[#D96B4A]' },
+  CRITICAL: { label: 'Critical', color: '#C84C4C', dim: '#A63838', text: 'text-[#C84C4C]' },
 };
 
 export function riskColor(level) {
-  return RISK_META[level]?.color || '#9fe066';
+  return RISK_META[level]?.color || '#3A8F6A';
 }
 
 export function formatDate(iso) {
@@ -39,20 +39,20 @@ export function avatarHue(name) {
 }
 
 export const OUTCOME_META = {
-  IMPROVED: { label: 'Improved', color: '#9fe066' },
-  PARTIAL: { label: 'Partial', color: '#eaa73f' },
-  INEFFECTIVE: { label: 'Ineffective', color: '#ef6355' },
+  IMPROVED: { label: 'Improved', color: '#3A8F6A' },
+  PARTIAL: { label: 'Partial', color: '#D9922B' },
+  INEFFECTIVE: { label: 'Ineffective', color: '#C84C4C' },
 };
 
 export const STATUS_META = {
-  OPEN: { label: 'Open', color: '#ef6355' },
-  ASSIGNED: { label: 'Assigned', color: '#eaa73f' },
-  RESOLVED: { label: 'Resolved', color: '#9fe066' },
-  RECOMMENDED: { label: 'Recommended', color: '#C98F9F' },
-  STARTED: { label: 'Started', color: '#7A5963' },
-  MONITORING: { label: 'Monitoring', color: '#eaa73f' },
-  COMPLETED: { label: 'Completed', color: '#9fe066' },
-  EVALUATED: { label: 'Evaluated', color: '#9fe066' },
-  ESCALATED: { label: 'Escalated', color: '#ef6355' },
-  CLOSED: { label: 'Closed', color: '#B39A9F' },
+  OPEN: { label: 'Open', color: '#C84C4C' },
+  ASSIGNED: { label: 'Assigned', color: '#D9922B' },
+  RESOLVED: { label: 'Resolved', color: '#3A8F6A' },
+  RECOMMENDED: { label: 'Recommended', color: '#2A8588' },
+  STARTED: { label: 'Started', color: '#2A8588' },
+  MONITORING: { label: 'Monitoring', color: '#D9922B' },
+  COMPLETED: { label: 'Completed', color: '#3A8F6A' },
+  EVALUATED: { label: 'Evaluated', color: '#3A8F6A' },
+  ESCALATED: { label: 'Escalated', color: '#C84C4C' },
+  CLOSED: { label: 'Closed', color: '#607580' },
 };

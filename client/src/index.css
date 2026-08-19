@@ -2,47 +2,47 @@
 @import "tailwindcss";
 
 @theme {
-  /* ---- Foundation (Dusty Rose + Pearl, light theme) ---- */
-  --color-void: #F3E7E4;
-  --color-deep: #EDE0DD;
-  --color-panel: #FFF8F7CC;
+  /* ---- Foundation (Main page #F8FAF9, Cards #FFFFFF, Border #D9E8E7) ---- */
+  --color-void: #F8FAF9;
+  --color-deep: #F8FAF9;
+  --color-panel: #FFFFFF;
   --color-panel-solid: #FFFFFF;
-  --color-panel-alt: #F6ECE9;
-  --color-hairline: #E6D3D6;
-  --color-hairline-soft: #EFE1DF;
+  --color-panel-alt: #EDF7F8;
+  --color-hairline: #D9E8E7;
+  --color-hairline-soft: #D9E8E7;
 
   /* ---- Accents ---- */
-  --color-teal: #7A5963;
-  --color-teal-dim: #5C4249;
-  --color-cobalt: #C98F9F;
-  --color-cobalt-dim: #8F6570;
-  --color-lime: #9fe066;
-  --color-lime-dim: #5f8a34;
-  --color-amber: #eaa73f;
-  --color-amber-dim: #8f6521;
-  --color-coral: #ef6355;
-  --color-coral-dim: #8f342a;
+  --color-teal: #2A8588; /* Primary Teal #2A8588 */
+  --color-teal-dim: #216B6D;
+  --color-cobalt: #153A5B; /* Heading #153A5B */
+  --color-cobalt-dim: #0E2942;
+  --color-lime: #3A8F6A; /* Stable */
+  --color-lime-dim: #2D7053;
+  --color-amber: #D9922B; /* Watch */
+  --color-amber-dim: #B8781E;
+  --color-coral: #D96B4A; /* Deteriorating */
+  --color-coral-dim: #C84C4C; /* Critical */
 
-  /* ---- Surfaces (student side / light) ---- */
-  --color-paper: #f6f3ec;
-  --color-paper-alt: #eaeadf;
-  --color-ink: #3A2A2E;
+  /* ---- Surfaces ---- */
+  --color-paper: #F8FAF9;
+  --color-paper-alt: #EDF7F8;
+  --color-ink: #153A5B; /* Heading #153A5B */
 
-  /* ---- Tailwind default-scale overrides (slate + teal used throughout) ---- */
-  --color-slate-50: #2B1F22;
-  --color-slate-100: #2B1F22;
-  --color-slate-200: #3A2A2E;
-  --color-slate-300: #5C4249;
-  --color-slate-400: #9C8288;
-  --color-slate-500: #8B6B72;
-  --color-slate-600: #6B4F56;
-  --color-slate-700: #5C4249;
-  --color-slate-800: #3A2A2E;
-  --color-slate-900: #2B1F22;
+  /* ---- Tailwind default-scale overrides ---- */
+  --color-slate-50: #F8FAF9;
+  --color-slate-100: #F8FAF9;
+  --color-slate-200: #153A5B; /* Heading text */
+  --color-slate-300: #153A5B;
+  --color-slate-400: #607580; /* Secondary text */
+  --color-slate-500: #607580; /* Secondary text */
+  --color-slate-600: #607580;
+  --color-slate-700: #153A5B;
+  --color-slate-800: #153A5B;
+  --color-slate-900: #153A5B;
 
-  --color-teal-300: #7A5963;
-  --color-teal-400: #7A5963;
-  --color-teal-500: #7A5963;
+  --color-teal-300: #2A8588;
+  --color-teal-400: #2A8588;
+  --color-teal-500: #2A8588;
 
   --font-display: 'Sora', 'IBM Plex Sans', sans-serif;
   --font-body: 'IBM Plex Sans', sans-serif;
@@ -54,26 +54,26 @@ html {
 }
 
 body {
-  background: var(--color-void);
-  color: #3A2A2E;
+  background: #F8FAF9;
+  color: #153A5B;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-teal);
-  color: #FBF3F0;
+  background: #2A8588;
+  color: #FFFFFF;
 }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D9C3C7; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #C9A8AE; }
+::-webkit-scrollbar-thumb { background: #D9E8E7; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #2A8588; }
 
 /* Focus visibility */
 :focus-visible {
-  outline: 2px solid var(--color-teal);
+  outline: 2px solid #2A8588;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -89,19 +89,19 @@ body {
 
 /* ---- Reusable primitives ---- */
 .panel {
-  background: linear-gradient(180deg, var(--color-panel-solid), #FFFFFF);
-  border: 1px solid var(--color-hairline);
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(122, 89, 99, 0.06);
+  background: #FFFFFF;
+  border: 1px solid #D9E8E7;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(21, 58, 91, 0.04);
 }
 
 .panel-alt {
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-hairline);
-  border-radius: 14px;
+  background: #EDF7F8;
+  border: 1px solid #D9E8E7;
+  border-radius: 16px;
 }
 
-.hairline { border-color: var(--color-hairline); }
+.hairline { border-color: #D9E8E7; }
 
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-mono); }
@@ -110,8 +110,8 @@ body {
   animation: pulseDot 2.2s ease-in-out infinite;
 }
 @keyframes pulseDot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 99, 85, 0.55); }
-  50% { box-shadow: 0 0 0 6px rgba(239, 99, 85, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 76, 76, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(200, 76, 76, 0); }
 }
 
 .count-up {
@@ -132,7 +132,7 @@ body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #EDE0DD 25%, #F6ECE9 37%, #EDE0DD 63%);
+  background: linear-gradient(90deg, #D9E8E7 25%, #EDF7F8 37%, #D9E8E7 63%);
   background-size: 400% 100%;
   animation: shimmer 1.6s ease infinite;
 }
@@ -150,26 +150,25 @@ body {
 }
 
 .chip {
-  border: 1px solid var(--color-hairline);
+  border: 1px solid #D9E8E7;
   transition: border-color .15s ease, background-color .15s ease;
 }
 .chip:hover {
-  border-color: var(--color-teal);
-  background: rgba(122, 89, 99, 0.08);
+  border-color: #2A8588;
+  background: rgba(42, 133, 136, 0.08);
 }
 
-/* High-contrast mode toggled from the top nav — brightens panel borders and
-   text for low-light or accessibility needs without changing the palette. */
+/* High-contrast mode */
 .theme-contrast .panel,
 .theme-contrast .panel-alt {
-  border-color: #C9A8AE !important;
+  border-color: #2A8588 !important;
 }
 .theme-contrast body {
-  color: #2B1F22;
+  color: #153A5B;
 }
 .theme-contrast .text-slate-400 {
-  color: #6B4F56 !important;
+  color: #607580 !important;
 }
 .theme-contrast .text-slate-500 {
-  color: #4A363B !important;
+  color: #153A5B !important;
 }
