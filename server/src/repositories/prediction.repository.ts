@@ -43,7 +43,7 @@ class PredictionRepository {
         RETURNING
           id,
           student_id AS "studentId",
-          risk_probability AS "riskProbability",
+          risk_probability::float8 AS "riskProbability",
           risk_level AS "riskLevel",
           model_version AS "modelVersion",
           predicted_at AS "predictedAt"
@@ -75,7 +75,7 @@ class PredictionRepository {
         SELECT
           id,
           student_id AS "studentId",
-          risk_probability AS "riskProbability",
+          risk_probability::float8 AS "riskProbability",
           risk_level AS "riskLevel",
           model_version AS "modelVersion",
           predicted_at AS "predictedAt"
@@ -101,7 +101,7 @@ class PredictionRepository {
         SELECT
           id,
           student_id AS "studentId",
-          risk_probability AS "riskProbability",
+          risk_probability::float8 AS "riskProbability",
           risk_level AS "riskLevel",
           model_version AS "modelVersion",
           predicted_at AS "predictedAt"
@@ -131,7 +131,7 @@ class PredictionRepository {
         SELECT
           id,
           student_id AS "studentId",
-          risk_probability AS "riskProbability",
+          risk_probability::float8 AS "riskProbability",
           risk_level AS "riskLevel",
           model_version AS "modelVersion",
           predicted_at AS "predictedAt"

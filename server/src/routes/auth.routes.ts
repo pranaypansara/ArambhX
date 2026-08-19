@@ -10,9 +10,12 @@ const router = Router();
 
 // Simple in-memory rate limit on credential endpoints (brute-force guard).
 // No Redis, no distributed state — appropriate for a hackathon MVP.
+// The window/limit are env-configurable; production keeps the strict default
+// while development (and the integration suite) gets a more generous budget.
+const isProd = process.env.NODE_ENV === 'production';
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 20, // max 20 requests per window per IP
+  windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
+  limit: Number(process.env.AUTH_RATE_LIMIT_MAX ?? (isProd ? 20 : 200)),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
