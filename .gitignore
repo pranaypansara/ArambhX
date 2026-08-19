@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local ML training data and generated artifacts are not runtime dependencies.
+server/ml/source/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
