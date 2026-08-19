@@ -18,7 +18,7 @@ export const analyzeStudent = async (
   try {
     const { id } = studentIdParamSchema.parse(req.params);
 
-    const analysis = await analyzeStudentRisk(id);
+    const analysis = await analyzeStudentRisk(id, req.user?.id);
 
     res.status(200).json({
       success: true,

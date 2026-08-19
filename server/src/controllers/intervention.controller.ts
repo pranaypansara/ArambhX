@@ -26,7 +26,7 @@ export const generateStudentInterventions = async (
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
 
-    const { created, open } = await generateInterventions(studentId);
+    const { created, open } = await generateInterventions(studentId, req.user?.id);
 
     res.status(200).json({
       success: true,
@@ -131,7 +131,7 @@ export const updateInterventionStatusById = async (
     const { id } = interventionIdParamSchema.parse(req.params);
     const { status } = updateInterventionStatusSchema.parse(req.body);
 
-    const intervention = await updateInterventionStatus(id, status);
+    const intervention = await updateInterventionStatus(id, status, req.user?.id);
 
     res.status(200).json({
       success: true,

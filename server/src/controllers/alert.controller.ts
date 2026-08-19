@@ -84,7 +84,7 @@ export const resolveAlertById = async (
   try {
     const { id } = alertIdParamSchema.parse(req.params);
 
-    const alert = await resolveAlert(id);
+    const alert = await resolveAlert(id, req.user?.id);
     if (!alert) {
       return res.status(404).json({
         success: false,

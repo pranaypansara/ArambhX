@@ -22,7 +22,10 @@ import {
  *      the dedicated ML2 client.
  *   5. Return the validated ML2 result (trend, alert, recommendations).
  */
-export const analyzeStudentRisk = async (studentId: number): Promise<ML2AnalysisResponse> => {
+export const analyzeStudentRisk = async (
+  studentId: number,
+  actorUserId?: number | null
+): Promise<ML2AnalysisResponse> => {
   const student = await StudentRepository.findById(studentId);
   if (!student) {
     return Promise.reject(new StudentNotFoundError(studentId));
@@ -54,7 +57,7 @@ export const analyzeStudentRisk = async (studentId: number): Promise<ML2Analysis
   // Never allowed to break the risk-analysis flow; failures are logged.
   const latestPredictionId = history.length > 0 ? history[0].id : null;
   try {
-    await evaluateAlertsFromMl2(studentId, analysis, latestPredictionId);
+    await evaluateAlertsFromMl2(studentId, analysis, latestPredictionId, actorUserId);
   } catch (error) {
     console.error(
       `[Alert Service] ML2 alert generation failed for student ${studentId}:`,

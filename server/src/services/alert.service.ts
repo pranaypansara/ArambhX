@@ -10,6 +10,7 @@ import {
   StoredAlert
 } from '../types/alert.types.js';
 import { ML2AnalysisResponse } from '../types/ml2.types.js';
+import { notifyAlertCreated, recordAuditSafely } from './notification.service.js';
 
 /**
  * Application-level smart alert rules.
@@ -161,12 +162,41 @@ const ruleMl2Intelligence = (
   return candidates;
 };
 
-/** Insert an alert only if the student has no OPEN alert of the same type. */
-const ensureAlert = async (candidate: CreateAlertInput): Promise<void> => {
+/**
+ * Insert an alert only if the student has no OPEN alert of the same type.
+ *
+ * When the alert is actually created, a Phase 12 notification is generated for
+ * the acting user (only when an authenticated actor is known) and an audit row
+ * is recorded. Notification/audit failures are logged and swallowed so they can
+ * never break the alert flow. Returns the created alert, or null when the
+ * student already has an open alert of the same type (de-duplicated).
+ */
+const ensureAlert = async (
+  candidate: CreateAlertInput,
+  actorUserId?: number | null
+): Promise<StoredAlert | null> => {
   const open = await AlertRepository.hasOpenAlert(candidate.studentId, candidate.alertType);
-  if (!open) {
-    await AlertRepository.create(candidate);
+  if (open) return null;
+
+  const alert = await AlertRepository.create(candidate);
+
+  try {
+    if (actorUserId != null) {
+      await notifyAlertCreated(actorUserId, alert);
+    }
+    await recordAuditSafely(actorUserId ?? null, 'ALERT_CREATED', 'ALERT', alert.id, {
+      alertType: alert.alertType,
+      priority: alert.priority,
+      studentId: alert.studentId
+    });
+  } catch (error) {
+    console.error(
+      `[Notification Service] Alert notification failed for alert ${alert.id}:`,
+      error
+    );
   }
+
+  return alert;
 };
 
 /**
@@ -174,7 +204,8 @@ const ensureAlert = async (candidate: CreateAlertInput): Promise<void> => {
  * prediction flow; callers wrap it so a failure there never breaks prediction.
  */
 export const evaluateAlertsAfterPrediction = async (
-  prediction: StoredPrediction
+  prediction: StoredPrediction,
+  actorUserId?: number | null
 ): Promise<void> => {
   const previous = await PredictionRepository.findPreviousByStudentId(
     prediction.studentId,
@@ -191,7 +222,7 @@ export const evaluateAlertsAfterPrediction = async (
   if (ruleC) candidates.push(ruleC);
 
   for (const candidate of candidates) {
-    await ensureAlert(candidate);
+    await ensureAlert(candidate, actorUserId);
   }
 };
 
@@ -202,14 +233,15 @@ export const evaluateAlertsAfterPrediction = async (
 export const evaluateAlertsFromMl2 = async (
   studentId: number,
   analysis: ML2AnalysisResponse,
-  predictionId?: number | null
+  predictionId?: number | null,
+  actorUserId?: number | null
 ): Promise<void> => {
   const candidates = ruleMl2Intelligence(studentId, analysis).map((c) => ({
     ...c,
     predictionId: predictionId ?? null
   }));
   for (const candidate of candidates) {
-    await ensureAlert(candidate);
+    await ensureAlert(candidate, actorUserId);
   }
 };
 
@@ -232,8 +264,27 @@ export const getAlertById = async (id: number): Promise<StoredAlert | null> =>
   AlertRepository.findById(id);
 
 /** Resolve an alert (status -> RESOLVED, resolved_at stamped). */
-export const resolveAlert = async (id: number): Promise<StoredAlert | null> =>
-  AlertRepository.resolve(id);
+export const resolveAlert = async (
+  id: number,
+  actorUserId?: number | null
+): Promise<StoredAlert | null> => {
+  const alert = await AlertRepository.resolve(id);
+
+  // Phase 12: record the resolution audit trail (never blocks the response).
+  if (alert) {
+    try {
+      await recordAuditSafely(actorUserId ?? null, 'ALERT_RESOLVED', 'ALERT', alert.id, {
+        alertType: alert.alertType,
+        priority: alert.priority,
+        studentId: alert.studentId
+      });
+    } catch (error) {
+      console.error(`[Notification Service] Alert resolve audit failed for alert ${id}:`, error);
+    }
+  }
+
+  return alert;
+};
 
 /** Convenience type re-export for controllers that need predictions. */
 export type { AlertPriority, AlertType, StoredAlert, CreateAlertInput };

@@ -13,6 +13,11 @@ import {
   StoredIntervention
 } from '../types/intervention.types.js';
 import { StudentNotFoundError } from './prediction.service.js';
+import {
+  notifyInterventionRecommended,
+  notifyInterventionStatusUpdated,
+  recordAuditSafely
+} from './notification.service.js';
 import { StoredPrediction } from '../repositories/prediction.repository.js';
 import { StoredAlert } from '../types/alert.types.js';
 
@@ -176,7 +181,10 @@ const ruleLowAcademicTutoring = (ctx: RuleContext): CreateInterventionInput | nu
  * repeated invocations never stack duplicates. Returns the newly created
  * interventions and the student's current OPEN intervention list.
  */
-export const generateInterventions = async (studentId: number): Promise<{
+export const generateInterventions = async (
+  studentId: number,
+  actorUserId?: number | null
+): Promise<{
   created: StoredIntervention[];
   open: StoredIntervention[];
 }> => {
@@ -224,7 +232,26 @@ export const generateInterventions = async (studentId: number): Promise<{
   for (const candidate of uniqueCandidates) {
     const open = await InterventionRepository.hasOpenByType(studentId, candidate.type);
     if (!open) {
-      created.push(await InterventionRepository.create(candidate));
+      const intervention = await InterventionRepository.create(candidate);
+      created.push(intervention);
+
+      // Phase 12: notify the acting staff member + audit the recommendation.
+      // Best-effort only — secondary failures must never fail the flow.
+      try {
+        if (actorUserId != null) {
+          await notifyInterventionRecommended(actorUserId, intervention);
+        }
+        await recordAuditSafely(actorUserId ?? null, 'INTERVENTION_CREATED', 'INTERVENTION', intervention.id, {
+          studentId: intervention.studentId,
+          type: intervention.type,
+          priority: intervention.priority
+        });
+      } catch (error) {
+        console.error(
+          `[Notification Service] Intervention notification failed for intervention ${intervention.id}:`,
+          error
+        );
+      }
     }
   }
 
@@ -270,7 +297,8 @@ export const getInterventionById = async (id: number): Promise<StoredInterventio
  */
 export const updateInterventionStatus = async (
   id: number,
-  status: InterventionStatus
+  status: InterventionStatus,
+  actorUserId?: number | null
 ): Promise<StoredIntervention> => {
   const current = await InterventionRepository.findById(id);
   if (!current) {
@@ -295,6 +323,26 @@ export const updateInterventionStatus = async (
   if (!updated) {
     return Promise.reject(new InterventionNotFoundError(id));
   }
+
+  // Phase 12: notify the acting staff member + audit the status change.
+  // Best-effort only — secondary failures must never fail the status update.
+  try {
+    if (actorUserId != null) {
+      await notifyInterventionStatusUpdated(actorUserId, updated, current.status);
+    }
+    await recordAuditSafely(actorUserId ?? null, 'INTERVENTION_STATUS_UPDATED', 'INTERVENTION', updated.id, {
+      studentId: updated.studentId,
+      type: updated.type,
+      fromStatus: current.status,
+      toStatus: updated.status
+    });
+  } catch (error) {
+    console.error(
+      `[Notification Service] Intervention status notification failed for intervention ${updated.id}:`,
+      error
+    );
+  }
+
   return updated;
 };
 

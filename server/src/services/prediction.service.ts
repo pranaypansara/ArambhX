@@ -3,6 +3,7 @@ import PredictionRepository from '../repositories/prediction.repository.js';
 import { buildMLFeatures } from './mlFeatureBuilder.service.js';
 import { mlPredictionClient } from './mlPredictionClient.service.js';
 import { evaluateAlertsAfterPrediction } from './alert.service.js';
+import { recordAuditSafely } from './notification.service.js';
 import { MLPredictionResult } from '../types/prediction.types.js';
 import { StoredPrediction } from '../repositories/prediction.repository.js';
 
@@ -15,8 +16,15 @@ import { StoredPrediction } from '../repositories/prediction.repository.js';
  *   3. Send the payload to FastAPI through the dedicated ML client.
  *   4. Persist the exact ML result in PostgreSQL.
  *   5. Return the prediction with storage metadata.
+ *
+ * actorUserId (the authenticated staff member triggering the run) is recorded
+ * on the audit trail when available. Audit + alert/notification side effects
+ * are best-effort and can never fail the prediction itself.
  */
-export const predictStudent = async (studentId: number): Promise<{
+export const predictStudent = async (
+  studentId: number,
+  actorUserId?: number | null
+): Promise<{
   studentId: number;
   prediction: MLPredictionResult;
   stored: StoredPrediction;
@@ -39,10 +47,17 @@ export const predictStudent = async (studentId: number): Promise<{
     prediction
   });
 
+  // Phase 12: audit the stored prediction (best-effort, never throws).
+  await recordAuditSafely(actorUserId ?? null, 'PREDICTION_CREATED', 'PREDICTION', stored.id, {
+    studentId,
+    riskLevel: prediction.risk_level,
+    riskProbability: prediction.risk_probability
+  });
+
   // Phase 9: evaluate smart-alert rules on the freshly stored prediction.
   // Never allowed to break the prediction flow — failures are logged below.
   try {
-    await evaluateAlertsAfterPrediction(stored);
+    await evaluateAlertsAfterPrediction(stored, actorUserId);
   } catch (error) {
     console.error(
       `[Alert Service] Alert generation failed after prediction ${stored.id} for student ${studentId}:`,
