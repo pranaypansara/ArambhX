@@ -15,6 +15,7 @@ import {
   createRecord as createAcademicRecord,
   getHistory as getAcademicHistory
 } from '../controllers/academic.controller.js';
+import { getMLFeatures } from '../controllers/mlFeature.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -100,6 +101,14 @@ router.get(
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   getStudentSummary
+);
+
+// Phase 3: ML1 feature builder (input preparation only, no model execution)
+router.get(
+  '/:id/ml-features',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getMLFeatures
 );
 
 export default router;
