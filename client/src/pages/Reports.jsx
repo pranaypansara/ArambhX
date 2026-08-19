@@ -8,6 +8,7 @@ import { PageHeader, SectionCard } from '@/components/ui/Page';
 import StudentAvatar from '@/components/ui/StudentAvatar';
 import { OUTCOME_META } from '@/lib/riskUtils';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import RiskTrendChart from '@/components/charts/RiskTrendChart';
 
 const AXIS = { fill: '#a98f95', fontSize: 11, fontFamily: 'IBM Plex Mono' };
 
@@ -42,66 +43,17 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        // 1. Load all student summaries (cache-aware, shared across pages)
-        const s = await fetchSummaries();
-        setSummaries(s || []);
+  // Helper: format date string split
+  const formatDate = (iso) => {
+    if (!iso) return '--';
+    return new Date(iso).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
-        // 2. Load global alerts
-        const aRes = await api.listAlerts({ page: 1, limit: 200 });
-        const rawAlerts = aRes?.data?.alerts || [];
-        setAlerts(rawAlerts.map((a) => ({
-          id: a.id,
-          studentId: a.studentId ?? a.student_id,
-          studentName: a.studentName ?? a.student_name,
-          alertType: a.alertType ?? a.alert_type,
-          severity: a.severity || 'MEDIUM',
-          title: a.message || `${severity} risk alert`,
-          status: a.status,
-          createdAt: a.createdAt ?? a.created_at,
-        })));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load reports');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <SectionCard><Skeleton className="h-32" /></SectionCard>
-        <SectionCard><Skeleton className="h-32" /></SectionCard>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <ErrorState title="Could not load reports" description={error} />;
-  }
-
-  if (!summaries || summaries.length === 0) {
-    return (
-      <div>
-        <PageHeader
-          eyebrow="Screen 14"
-          title="Reports & Analytics"
-          subtitle="Institutional patterns across risk, departments, alerts and intervention outcomes."
-        />
-        <EmptyState
-          icon={Download}
-          title="No student data yet"
-          description="Run predictions first so Pulse can generate reports."
-        />
-      </div>
-    );
-  }
-
-  // ---------- Derived real data ----------
+  // ---------- Derived real data (always called before early returns) ----------
   const riskDist = useMemo(() =>
     groupCount(summaries, (s) => s.prediction?.risk_level || 'LOW'),
   [], [summaries]);
@@ -163,17 +115,7 @@ export default function Reports() {
         improvement: Math.round(running * 10) / 10,
       };
     });
-  }, [summaries]); // note: formatting helper needed
-
-  // Helper: format date string split
-  const formatDate = (iso) => {
-    if (!iso) return '--';
-    return new Date(iso).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  }, [summaries]);
 
   // Follow-up / overdue students
   const followUpStudents = useMemo(() => {
@@ -186,6 +128,82 @@ export default function Reports() {
       .filter((s) => dueIds.has(s.student?.id))
       .sort((a, b) => b.priority - a.priority);
   }, [summaries]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        // 1. Load all student summaries (cache-aware, shared across pages)
+        const s = await fetchSummaries();
+        setSummaries(s || []);
+
+        // 2. Load global alerts
+        const aRes = await api.listAlerts({ page: 1, limit: 200 });
+        const rawAlerts = aRes?.data?.alerts || [];
+        setAlerts(rawAlerts.map((a) => ({
+          id: a.id,
+          studentId: a.studentId ?? a.student_id,
+          studentName: a.studentName ?? a.student_name,
+          alertType: a.alertType ?? a.alert_type,
+          severity: a.severity || 'MEDIUM',
+          title: a.message || `${severity} risk alert`,
+          status: a.status,
+          createdAt: a.createdAt ?? a.created_at,
+        })));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load reports');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <SectionCard><Skeleton className="h-32" /></SectionCard>
+        <SectionCard><Skeleton className="h-32" /></SectionCard>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState title="Could not load reports" description={error} />;
+  }
+
+  if (!summaries || summaries.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          eyebrow="Screen 14"
+          title="Reports & Analytics"
+          subtitle="Institutional patterns across risk, departments, alerts and intervention outcomes."
+        />
+        <EmptyState
+          icon={Download}
+          title="No student data yet"
+          description="Run predictions first so Pulse can generate reports."
+        />
+      </div>
+    );
+  }
+
+  // ---------- CSV export from real loaded data ----------
+  function exportSummary() {
+    const rows = summaries.map((s) => ({
+      student: s.student?.name,
+      enrollment_number: s.student?.enrollment_number,
+      department: s.student?.department,
+      semester: s.student?.semester,
+      risk_probability: s.prediction?.risk_probability,
+      risk_level: s.prediction?.risk_level,
+      deterioration_velocity: s.velocity,
+      priority_score: s.priority,
+      open_alerts: s.openAlerts?.length || 0,
+      active_interventions: s.activeInterventions?.length || 0,
+    }));
+    downloadCsv('arambhx-student-risk-summary.csv', rows);
+  }
 
   // ---------- CSV export from real loaded data ----------
   function exportSummary() {
