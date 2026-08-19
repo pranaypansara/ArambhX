@@ -27,6 +27,7 @@ import {
   generateStudentInterventions,
   getStudentInterventions
 } from '../controllers/intervention.controller.js';
+import { getStudentDashboardData } from '../controllers/dashboard.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -175,6 +176,14 @@ router.get(
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   getStudentInterventions
+);
+
+// Phase 11: aggregated dashboard overview for a specific student
+router.get(
+  '/:id/dashboard',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getStudentDashboardData
 );
 
 export default router;

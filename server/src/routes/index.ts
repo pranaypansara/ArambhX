@@ -4,6 +4,7 @@ import studentRouter from './student.routes.js';
 import mlRouter from './ml.routes.js';
 import alertRouter from './alert.routes.js';
 import interventionRouter from './intervention.routes.js';
+import dashboardRouter from './dashboard.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 
@@ -23,6 +24,9 @@ router.use('/alerts', alertRouter);
 
 // Mount intervention routes under /interventions (Phase 10)
 router.use('/interventions', interventionRouter);
+
+// Mount dashboard aggregation routes under /dashboard (Phase 11)
+router.use('/dashboard', dashboardRouter);
 
 // Role-Based Access Control (RBAC) testing route
 // Accessible only to authenticated ADMINs
