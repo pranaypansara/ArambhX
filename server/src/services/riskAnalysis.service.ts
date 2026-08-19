@@ -2,6 +2,7 @@ import StudentRepository from '../repositories/student.repository.js';
 import PredictionRepository from '../repositories/prediction.repository.js';
 import { buildMLFeatures } from './mlFeatureBuilder.service.js';
 import { ml2Client } from './ml2Client.service.js';
+import { evaluateAlertsFromMl2 } from './alert.service.js';
 import { StudentNotFoundError } from './prediction.service.js';
 import {
   ML2AnalysisResponse,
@@ -42,9 +43,24 @@ export const analyzeStudentRisk = async (studentId: number): Promise<ML2Analysis
       predicted_at: row.predictedAt.toISOString()
     }));
 
-  return ml2Client.analyze({
+  const analysis = await ml2Client.analyze({
     student_id: studentId,
     features,
     risk_history
   });
+
+  // Phase 9: surface meaningful ML2 output as alerts (rule D). Uses the ML2
+  // result already computed here — no extra ML2 processing is triggered.
+  // Never allowed to break the risk-analysis flow; failures are logged.
+  const latestPredictionId = history.length > 0 ? history[0].id : null;
+  try {
+    await evaluateAlertsFromMl2(studentId, analysis, latestPredictionId);
+  } catch (error) {
+    console.error(
+      `[Alert Service] ML2 alert generation failed for student ${studentId}:`,
+      error
+    );
+  }
+
+  return analysis;
 };

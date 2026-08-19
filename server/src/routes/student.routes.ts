@@ -22,6 +22,7 @@ import {
   getStudentLatestPrediction
 } from '../controllers/prediction.controller.js';
 import { analyzeStudent } from '../controllers/riskAnalysis.controller.js';
+import { getStudentAlerts } from '../controllers/alert.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -146,6 +147,14 @@ router.post(
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   analyzeStudent
+);
+
+// Phase 9: alerts for a specific student
+router.get(
+  '/:id/alerts',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getStudentAlerts
 );
 
 export default router;

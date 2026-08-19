@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRouter from './auth.routes.js';
 import studentRouter from './student.routes.js';
 import mlRouter from './ml.routes.js';
+import alertRouter from './alert.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 
@@ -15,6 +16,9 @@ router.use('/students', studentRouter);
 
 // Mount ML service proxy routes under /ml
 router.use('/ml', mlRouter);
+
+// Mount alert routes under /alerts (Phase 9)
+router.use('/alerts', alertRouter);
 
 // Role-Based Access Control (RBAC) testing route
 // Accessible only to authenticated ADMINs

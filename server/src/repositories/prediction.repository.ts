@@ -116,6 +116,36 @@ class PredictionRepository {
     const { rows } = await pool.query(query);
     return (rows[0] as StoredPrediction) || null;
   }
+
+  /**
+   * Retrieve the most recent prediction for a student that is NOT the given
+   * prediction id — i.e. the previous prediction before a just-stored one.
+   * Used by the alert rules (Phase 9) to compare against the prior snapshot.
+   */
+  async findPreviousByStudentId(
+    studentId: number,
+    excludePredictionId: number
+  ): Promise<StoredPrediction | null> {
+    const query = {
+      text: `
+        SELECT
+          id,
+          student_id AS "studentId",
+          risk_probability AS "riskProbability",
+          risk_level AS "riskLevel",
+          model_version AS "modelVersion",
+          predicted_at AS "predictedAt"
+        FROM predictions
+        WHERE student_id = $1 AND id <> $2
+        ORDER BY predicted_at DESC
+        LIMIT 1
+      `,
+      values: [studentId, excludePredictionId]
+    };
+
+    const { rows } = await pool.query(query);
+    return (rows[0] as StoredPrediction) || null;
+  }
 }
 
 export default new PredictionRepository();

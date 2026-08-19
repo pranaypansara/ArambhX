@@ -2,6 +2,7 @@ import StudentRepository from '../repositories/student.repository.js';
 import PredictionRepository from '../repositories/prediction.repository.js';
 import { buildMLFeatures } from './mlFeatureBuilder.service.js';
 import { mlPredictionClient } from './mlPredictionClient.service.js';
+import { evaluateAlertsAfterPrediction } from './alert.service.js';
 import { MLPredictionResult } from '../types/prediction.types.js';
 import { StoredPrediction } from '../repositories/prediction.repository.js';
 
@@ -37,6 +38,17 @@ export const predictStudent = async (studentId: number): Promise<{
     studentId,
     prediction
   });
+
+  // Phase 9: evaluate smart-alert rules on the freshly stored prediction.
+  // Never allowed to break the prediction flow — failures are logged below.
+  try {
+    await evaluateAlertsAfterPrediction(stored);
+  } catch (error) {
+    console.error(
+      `[Alert Service] Alert generation failed after prediction ${stored.id} for student ${studentId}:`,
+      error
+    );
+  }
 
   return { studentId, prediction, stored };
 };
