@@ -39,7 +39,7 @@ Because these critical signals are fragmented across disconnected institutional 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        React + Vite UI                          │
-└────────────────────────────────┌────────────────────────────────┘
+└────────────────────────────────┬────────────────────────────────┘
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -52,16 +52,14 @@ Because these critical signals are fragmented across disconnected institutional 
 │     Neon PostgreSQL DB       │  │      FastAPI ML Service       │
 │  (Student Data & Analytics)  │  │   (Model Inference & Schema)  │
 └──────────────────────────────┘  └───────────────────────────────┘
-
 ```
 
 ### End-to-End Prediction Flow
 
 ```text
 [ Select Student ID ] ──► [ Fetch Neon DB Records ] ──► [ Build ML Feature Payload ]
-                                                                   │
+                                                                  │
 [ Trigger Interventions ] ◄── [ Store Risk Score ] ◄── [ Execute ML Model In FastAPI ]
-
 ```
 
 ---
@@ -105,7 +103,6 @@ ARAMBH-ASCEND/
 │
 ├── README.md
 └── .gitignore
-
 ```
 
 ---
@@ -156,7 +153,6 @@ The system computes features across four primary dimensions to assess risk:
 ```bash
 git clone [https://github.com/your-username/ARAMBH-ASCEND.git](https://github.com/your-username/ARAMBH-ASCEND.git)
 cd ARAMBH-ASCEND
-
 ```
 
 ---
@@ -167,7 +163,6 @@ cd ARAMBH-ASCEND
 cd client
 npm install
 npm run dev
-
 ```
 
 ---
@@ -177,7 +172,6 @@ npm run dev
 ```bash
 cd ../server
 npm install
-
 ```
 
 Create a `.env` file inside the `server/` directory:
@@ -186,14 +180,12 @@ Create a `.env` file inside the `server/` directory:
 PORT=5000
 DATABASE_URL=postgresql://user:password@ep-example-123456.neon.tech/neondb?sslmode=require
 ML_SERVICE_URL=http://localhost:8000
-
 ```
 
 Start the backend development server:
 
 ```bash
 npm run dev
-
 ```
 
 ---
@@ -216,13 +208,129 @@ pip install -r requirements.txt
 
 # Launch FastAPI service
 uvicorn main:app --reload --port 8000
-
 ```
 
 #### ML Endpoint Diagnostics
 
 * **Health Check:** `GET http://localhost:8000/health`
 * **Run Inference:** `POST http://localhost:8000/predict`
+
+---
+
+## Development status
+
+| Phase | Area | Status |
+|-------|------|--------|
+| 1 | Backend foundation (Node/Express/TS, Neon, raw SQL) | Completed |
+| 2 | Database & API foundation (auth, RBAC, students, records) | Completed |
+| 3 | ML feature builder (`GET /api/students/:id/ml-features`) | Completed |
+| 4 | ML demo/test data seeding + feature validation | Completed |
+| 5 | Standalone FastAPI ML1 prediction service (`server/ml/service`) | Completed |
+| 6 | Node.js ↔ FastAPI integration (`POST /api/students/:id/predict`) | Completed |
+| 7 | Prediction storage and history (`POST /api/students/:id/predict`, `GET /api/students/:id/predictions`) | Completed |
+| 8+ | Alerts, interventions, dashboards | Planned |
+
+## Backend & ML service architecture
+
+```
+             ┌────────────────────────────────┐
+             │   Node.js / Express backend    │
+             │   (server/)                    │
+             │  • auth + RBAC                 │
+             │  • students / records APIs     │
+             │  • ML feature builder (Ph. 3)  │
+             │  • prediction orchestration    │
+             │  • prediction storage (Ph. 7)  │
+             └──────────────┬─────────────────┘
+                            │ HTTP (JSON)
+                            ▼
+             ┌────────────────────────────────┐
+             │   FastAPI ML1 service          │
+             │   (server/ml/service/)         │
+             │  • loads ML1 pipeline (Ph. 5)  │
+             │  • validates feature payload   │
+             │  • runs prediction + threshold │
+             └──────────────┬─────────────────┘
+                            │
+                            ▼
+             ┌────────────────────────────────┐
+             │   Neon PostgreSQL              │
+             │  • predictions table           │
+             │  • prediction_factors table    │
+             └────────────────────────────────┘
+```
+
+### ML prediction flow (Phase 7)
+
+1. Client calls `POST /api/students/:studentId/predict`
+2. Backend validates the student ID and confirms the student exists
+3. Backend builds the exact 35-field ML1 feature payload using the Phase 3 feature builder
+4. Backend sends the payload to the FastAPI ML service `POST /predict`
+5. FastAPI validates the payload against its Pydantic schema
+6. FastAPI runs the saved ML1 pipeline and returns the prediction result
+7. Backend validates the FastAPI response
+8. Backend persists the prediction result in Neon PostgreSQL (`predictions` table)
+9. Backend returns the prediction with storage metadata to the client
+
+Predictions are now stored in the database and can be retrieved via the history endpoints.
+
+## Configuration (backend)
+
+Copy `server/.env.example` to `server/.env` and set:
+
+| Variable                | Default               | Purpose                                   |
+|-------------------------|-----------------------|-------------------------------------------|
+| `PORT`                  | `5000`                | Backend HTTP port                         |
+| `DATABASE_URL`          | —                     | Neon PostgreSQL connection string         |
+| `JWT_SECRET`            | —                     | JWT signing secret                        |
+| `JWT_EXPIRES_IN`        | `7d`                  | JWT lifetime                              |
+| `ML_SERVICE_URL`        | `http://localhost:8000` | Base URL of the FastAPI ML1 service     |
+| `ML_SERVICE_TIMEOUT_MS` | `10000`               | Timeout for ML service requests (ms)      |
+
+## API endpoints (backend)
+
+| Method | Path                              | Access                  | Description                          |
+|--------|-----------------------------------|--------------------------|--------------------------------------|
+| POST   | `/api/auth/register`              | Public                   | Register a user                       |
+| POST   | `/api/auth/login`                 | Public                   | Login, get JWT                        |
+| GET    | `/api/students`                   | ADMIN, FACULTY, COUNSELOR | List students (paginated)          |
+| GET    | `/api/students/:id`               | ADMIN, FACULTY, COUNSELOR | Get a student                         |
+| GET    | `/api/students/:id/summary`       | ADMIN, FACULTY, COUNSELOR | Summary + latest records              |
+| GET    | `/api/students/:id/ml-features`   | ADMIN, FACULTY, COUNSELOR | Build ML1 feature payload (Phase 3)   |
+| POST   | `/api/students/:id/predict`       | ADMIN, FACULTY, COUNSELOR | Run ML1 prediction + store (Phase 7) |
+| GET    | `/api/students/:id/predictions`   | ADMIN, FACULTY, COUNSELOR | Get prediction history (Phase 7)     |
+| GET    | `/api/students/:id/predictions/latest` | ADMIN, FACULTY, COUNSELOR | Get latest prediction (Phase 7)   |
+| GET    | `/api/ml/health`                  | Public                   | Proxy check of the ML service health  |
+| GET    | `/api/health`                     | Public                   | Backend health check                  |
+
+## Known trade-offs (given competition timeline)
+
+- Pulse AI is currently a rule-based assistant over the in-memory mock data (pattern
+  matching on the question + student names) — structured so a real LLM/RAG backend call
+  can be dropped into `buildAnswer()` in `PulseAIPanel.jsx` without changing the UI.
+- No auth flow is wired up yet (role is fixed to the mock `CURRENT_USER`); the `users`
+  table and RBAC concept are modeled in the data layer so this is straightforward to add.
+- The `ErrorState` component exists in the shared UI kit but isn't triggered anywhere live,
+  since all data is synchronous mock data with nothing that can fail — wire it up alongside
+  real API calls (a fetch `catch` block is the natural place).
+- Bundle is a single chunk (~776 KB / ~224 KB gzip) — fine for a demo; route-based
+  `React.lazy` code-splitting is a quick follow-up if needed.
+
+## Database / Data Architecture (Backend)
+
+The Neon PostgreSQL database includes the following key tables for the ML pipeline:
+
+| Table | Purpose | Key Indexes |
+|-------|---------|-------------|
+| `students` | Core student profiles | PK on `id`, unique on `enrollment_number` |
+| `predictions` | ML1 prediction results | PK on `id`, index on `(student_id, predicted_at DESC)` |
+| `prediction_factors` | Feature-level impact scores per prediction | PK on `id`, index on `prediction_id` |
+| `assessment_records` | Student assessment data | Multiple indexes on `student_id`, `status`, `course_code` |
+| `lms_activity_records` | LMS clickstream data | Indexes on `student_id`, `activity_date`, `site_name` |
+| `attendance_records` | Attendance percentages | Index on `(student_id, recorded_at DESC)` |
+| `academic_records` | Academic performance snapshots | Index on `(student_id, recorded_at DESC)` |
+
+The `predictions` table stores the exact ML1 output: `risk_probability`, `risk_level`, `model_version`, and `predicted_at` timestamp. The existing index on `(student_id, predicted_at DESC)` makes history queries efficient.
 
 ---
 

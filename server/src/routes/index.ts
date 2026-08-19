@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authRouter from './auth.routes.js';
 import studentRouter from './student.routes.js';
+import mlRouter from './ml.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 
@@ -11,6 +12,9 @@ router.use('/auth', authRouter);
 
 // Mount student sub-router under /students
 router.use('/students', studentRouter);
+
+// Mount ML service proxy routes under /ml
+router.use('/ml', mlRouter);
 
 // Role-Based Access Control (RBAC) testing route
 // Accessible only to authenticated ADMINs
