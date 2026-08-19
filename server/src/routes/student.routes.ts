@@ -23,6 +23,10 @@ import {
 } from '../controllers/prediction.controller.js';
 import { analyzeStudent } from '../controllers/riskAnalysis.controller.js';
 import { getStudentAlerts } from '../controllers/alert.controller.js';
+import {
+  generateStudentInterventions,
+  getStudentInterventions
+} from '../controllers/intervention.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -155,6 +159,22 @@ router.get(
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   getStudentAlerts
+);
+
+// Phase 10: generate intervention recommendations from stored data (on demand)
+router.post(
+  '/:id/interventions/generate',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  generateStudentInterventions
+);
+
+// Phase 10: intervention recommendations for a specific student
+router.get(
+  '/:id/interventions',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  getStudentInterventions
 );
 
 export default router;

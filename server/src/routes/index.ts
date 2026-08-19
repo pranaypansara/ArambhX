@@ -3,6 +3,7 @@ import authRouter from './auth.routes.js';
 import studentRouter from './student.routes.js';
 import mlRouter from './ml.routes.js';
 import alertRouter from './alert.routes.js';
+import interventionRouter from './intervention.routes.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 
@@ -19,6 +20,9 @@ router.use('/ml', mlRouter);
 
 // Mount alert routes under /alerts (Phase 9)
 router.use('/alerts', alertRouter);
+
+// Mount intervention routes under /interventions (Phase 10)
+router.use('/interventions', interventionRouter);
 
 // Role-Based Access Control (RBAC) testing route
 // Accessible only to authenticated ADMINs

@@ -100,6 +100,33 @@ class AlertRepository {
     return rows[0].exists;
   }
 
+  /** List OPEN (ACTIVE / ACKNOWLEDGED) alerts for a student, newest first. */
+  async findOpenByStudentId(studentId: number): Promise<StoredAlert[]> {
+    const query = {
+      text: `
+        SELECT
+          a.id,
+          a.student_id AS "studentId",
+          s.name AS "studentName",
+          a.prediction_id AS "predictionId",
+          a.alert_type AS "alertType",
+          a.priority,
+          a.message,
+          a.status,
+          a.created_at AS "createdAt",
+          a.resolved_at AS "resolvedAt"
+        FROM alerts a
+        JOIN students s ON s.id = a.student_id
+        WHERE a.student_id = $1
+          AND a.status IN ('ACTIVE', 'ACKNOWLEDGED')
+        ORDER BY a.created_at DESC, a.id DESC
+      `,
+      values: [studentId]
+    };
+    const { rows } = await pool.query(query);
+    return rows as StoredAlert[];
+  }
+
   /** List alerts (newest first) with optional filters and pagination. */
   async findAll({
     limit,
