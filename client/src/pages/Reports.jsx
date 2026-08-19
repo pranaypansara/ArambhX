@@ -13,17 +13,18 @@ import RiskTrendChart from '@/components/charts/RiskTrendChart';
 const AXIS = { fill: '#a98f95', fontSize: 11, fontFamily: 'IBM Plex Mono' };
 
 function groupCount(items, keyFn) {
+  if (!Array.isArray(items)) return [];
   const map = {};
   items.forEach((i) => { const k = keyFn(i); map[k] = (map[k] || 0) + 1; });
   return Object.entries(map).map(([name, value]) => ({ name, value }));
 }
 
 function downloadCsv(filename, rows) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
+  if (!Array.isArray(rows) || !rows.length) return;
+  const headers = Object.keys(rows[0] || {});
   const csv = [
     headers.join(','),
-    ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(',')),
+    ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(',')),
   ].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -55,29 +56,29 @@ export default function Reports() {
 
   // ---------- Derived real data (always called before early returns) ----------
   const riskDist = useMemo(() =>
-    groupCount(summaries, (s) => s.prediction?.risk_level || 'LOW'),
+    groupCount(Array.isArray(summaries) ? summaries : [], (s) => s?.prediction?.risk_level || 'LOW'),
   [], [summaries]);
 
   const deptDist = useMemo(() =>
-    groupCount(summaries, (s) => s.student?.department || 'Unknown'),
+    groupCount(Array.isArray(summaries) ? summaries : [], (s) => s?.student?.department || 'Unknown'),
   [], [summaries]);
 
   const semDist = useMemo(() =>
-    groupCount(summaries, (s) => `Sem ${s.student?.semester || '?'}`).sort((a, b) =>
+    groupCount(Array.isArray(summaries) ? summaries : [], (s) => `Sem ${s?.student?.semester || '?'}`).sort((a, b) =>
       a.name.localeCompare(b.name),
     ),
   [], [summaries]);
 
   const alertDist = useMemo(() => {
-    if (!alerts.length) return [];
-    return groupCount(alerts, (a) => a.alertType.replace(/_/g, ' '));
+    if (!Array.isArray(alerts) || !alerts.length) return [];
+    return groupCount(alerts, (a) => (a?.alertType || '').replace(/_/g, ' '));
   }, [alerts]);
 
   const ivDist = useMemo(() => {
     const counts = {};
-    (summaries || []).forEach((s) => {
-      (s.allInterventions || []).forEach((iv) => {
-        const key = iv.intervention_type || 'Other';
+    (Array.isArray(summaries) ? summaries : []).forEach((s) => {
+      (Array.isArray(s?.allInterventions) ? s.allInterventions : []).forEach((iv) => {
+        const key = iv?.intervention_type || 'Other';
         counts[key] = (counts[key] || 0) + 1;
       });
     });
@@ -87,8 +88,9 @@ export default function Reports() {
   const outcomeDist = useMemo(() => {
     const evaluations = summarizeOutcomes(summaries);
     const map = {};
-    evaluations.forEach((e) => {
-      const cls = e.evaluation.classification;
+    (Array.isArray(evaluations) ? evaluations : []).forEach((e) => {
+      const cls = e?.evaluation?.classification;
+      if (!cls) return;
       if (!map[cls]) map[cls] = 0;
       map[cls] += 1;
     });
@@ -99,19 +101,19 @@ export default function Reports() {
   }, [summaries]);
 
   const improvementTrend = useMemo(() => {
-    const evaluations = summarizeOutcomes(summaries).sort(
-      (a, b) => new Date(b.evaluation.evaluatedAt) - new Date(a.evaluation.evaluatedAt),
+    const evaluations = [...summarizeOutcomes(summaries)].sort(
+      (a, b) => new Date(b?.evaluation?.evaluatedAt) - new Date(a?.evaluation?.evaluatedAt),
     );
     let running = 0;
-    return evaluations.map((o) => {
+    return (Array.isArray(evaluations) ? evaluations : []).map((o) => {
       running +=
-        o.evaluation.classification === 'IMPROVED'
+        o?.evaluation?.classification === 'IMPROVED'
           ? 1
-          : o.evaluation.classification === 'INEFFECTIVE'
+          : o?.evaluation?.classification === 'INEFFECTIVE'
             ? -0.5
             : 0.25;
       return {
-        period: formatDate(o.evaluation.evaluatedAt).split(' ').slice(0, 2).join(' '),
+        period: formatDate(o?.evaluation?.evaluatedAt)?.split(' ')?.slice(0, 2).join(' ') || '--',
         improvement: Math.round(running * 10) / 10,
       };
     });
@@ -120,13 +122,13 @@ export default function Reports() {
   // Follow-up / overdue students
   const followUpStudents = useMemo(() => {
     const dueIds = new Set(
-      (summaries || []).flatMap((s) =>
-        (s.allInterventions || []).filter((iv) => isOverdueIntervention(iv)),
-      ).map((iv) => iv.studentId),
+      (Array.isArray(summaries) ? summaries : []).flatMap((s) =>
+        (Array.isArray(s?.allInterventions) ? s.allInterventions : []).filter((iv) => isOverdueIntervention(iv)),
+      ).map((iv) => iv?.studentId),
     );
-    return (summaries || [])
-      .filter((s) => dueIds.has(s.student?.id))
-      .sort((a, b) => b.priority - a.priority);
+    return (Array.isArray(summaries) ? summaries : [])
+      .filter((s) => dueIds.has(s?.student?.id))
+      .sort((a, b) => (b.priority || 0) - (a.priority || 0));
   }, [summaries]);
 
   useEffect(() => {
@@ -140,16 +142,19 @@ export default function Reports() {
         // 2. Load global alerts
         const aRes = await api.listAlerts({ page: 1, limit: 200 });
         const rawAlerts = aRes?.data?.alerts || [];
-        setAlerts(rawAlerts.map((a) => ({
-          id: a.id,
-          studentId: a.studentId ?? a.student_id,
-          studentName: a.studentName ?? a.student_name,
-          alertType: a.alertType ?? a.alert_type,
-          severity: a.severity || 'MEDIUM',
-          title: a.message || `${severity} risk alert`,
-          status: a.status,
-          createdAt: a.createdAt ?? a.created_at,
-        })));
+        setAlerts(rawAlerts.map((a) => {
+          const severity = a.severity || a.priority || 'MEDIUM';
+          return {
+            id: a.id,
+            studentId: a.studentId ?? a.student_id,
+            studentName: a.studentName ?? a.student_name,
+            alertType: a.alertType ?? a.alert_type,
+            severity,
+            title: a.message || `${severity} risk alert`,
+            status: a.status,
+            createdAt: a.createdAt ?? a.created_at,
+          };
+        }));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load reports');
       } finally {
@@ -190,7 +195,7 @@ export default function Reports() {
 
   // ---------- CSV export from real loaded data ----------
   function exportSummary() {
-    const rows = summaries.map((s) => ({
+    const rows = (Array.isArray(summaries) ? summaries : []).map((s) => ({
       student: s.student?.name,
       enrollment_number: s.student?.enrollment_number,
       department: s.student?.department,
@@ -199,25 +204,8 @@ export default function Reports() {
       risk_level: s.prediction?.risk_level,
       deterioration_velocity: s.velocity,
       priority_score: s.priority,
-      open_alerts: s.openAlerts?.length || 0,
-      active_interventions: s.activeInterventions?.length || 0,
-    }));
-    downloadCsv('arambhx-student-risk-summary.csv', rows);
-  }
-
-  // ---------- CSV export from real loaded data ----------
-  function exportSummary() {
-    const rows = summaries.map((s) => ({
-      student: s.student?.name,
-      enrollment_number: s.student?.enrollment_number,
-      department: s.student?.department,
-      semester: s.student?.semester,
-      risk_probability: s.prediction?.risk_probability,
-      risk_level: s.prediction?.risk_level,
-      deterioration_velocity: s.velocity,
-      priority_score: s.priority,
-      open_alerts: s.openAlerts?.length || 0,
-      active_interventions: s.activeInterventions?.length || 0,
+      open_alerts: (Array.isArray(s.openAlerts) ? s.openAlerts : []).length || 0,
+      active_interventions: (Array.isArray(s.activeInterventions) ? s.activeInterventions : []).length || 0,
     }));
     downloadCsv('arambhx-student-risk-summary.csv', rows);
   }
