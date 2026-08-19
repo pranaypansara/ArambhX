@@ -1,0 +1,1 @@
+"""Pydantic schemas for ML1 prediction."""
