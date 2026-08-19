@@ -1,24 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle2, Circle, Calendar, MessageCircle, ShieldCheck, Sparkles,
-  Send, Bell, CalendarClock, TrendingUp,
+  Send, Bell, CalendarClock, TrendingUp, LogOut,
 } from 'lucide-react';
 import {
   STUDENTS, ATTENDANCE_RECORDS, ACADEMIC_RECORDS, interventionsForStudent, USERS,
 } from '@/data/mockData';
 import StudentAvatar from '@/components/ui/StudentAvatar';
 import { formatDate } from '@/lib/riskUtils';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/Toast';
 
-const STUDENT = STUDENTS[0]; // demo: Rahul Mehta
+const DEFAULT_STUDENT = STUDENTS[0]; // Rahul Mehta
 
-function latestFor(records) {
-  const r = records.filter(x => x.student_id === STUDENT.id);
-  return r[r.length - 1];
+function latestFor(records, studentId) {
+  const r = records.filter(x => x.student_id === studentId);
+  return r[r.length - 1] || records[0];
 }
-function prevFor(records) {
-  const r = records.filter(x => x.student_id === STUDENT.id);
-  return r[r.length - 2];
+function prevFor(records, studentId) {
+  const r = records.filter(x => x.student_id === studentId);
+  return r[r.length - 2] || records[0];
 }
 
 const RECOVERY_TASKS = [
@@ -30,10 +32,10 @@ const RECOVERY_TASKS = [
 
 function ProgressCard({ label, value, changeText, positive }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-      <div className="text-xs uppercase tracking-wide text-[#8a7f63] mb-2">{label}</div>
-      <div className="font-display text-3xl font-bold text-[#3a2a2e]">{value}%</div>
-      <div className={`text-xs mt-1.5 ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{changeText}</div>
+    <div className="rounded-2xl p-5 bg-[#FFFFFF] border border-[#D9E8E7] shadow-sm">
+      <div className="text-xs uppercase tracking-wide text-[#607580] font-bold mb-2">{label}</div>
+      <div className="font-display text-3xl font-black text-[#153A5B]">{value}%</div>
+      <div className={`text-xs font-bold mt-1.5 ${positive ? 'text-[#3A8F6A]' : 'text-[#D9922B]'}`}>{changeText}</div>
     </div>
   );
 }
@@ -72,33 +74,33 @@ function StudentPulseChat({ ctx }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-lg" style={{ background: '#3a2a2e', color: '#e7eef3' }}>
-        <MessageCircle size={13} /> Start a conversation
+      <button onClick={() => setOpen(true)} className="w-full flex items-center justify-center gap-1.5 text-xs font-extrabold px-3 py-2.5 rounded-xl bg-[#153A5B] text-white shadow-md hover:bg-[#0E2942] transition">
+        <MessageCircle size={14} /> Start a conversation with Pulse AI
       </button>
     );
   }
 
   return (
-    <div className="rounded-xl overflow-hidden border" style={{ borderColor: '#3a2a2e' }}>
-      <div ref={scrollRef} className="max-h-56 overflow-y-auto p-3 space-y-2" style={{ background: '#3a2a2e' }}>
+    <div className="rounded-2xl overflow-hidden border border-[#D9E8E7] shadow-lg">
+      <div ref={scrollRef} className="max-h-56 overflow-y-auto p-3 space-y-2 bg-[#153A5B]">
         {messages.map((m, i) => (
-          <div key={i} className={`text-xs px-2.5 py-2 rounded-lg max-w-[85%] ${m.role === 'user' ? 'ml-auto bg-teal-500 text-[#fbf3f0]' : 'bg-[#F6ECE966] text-slate-200'}`}>
+          <div key={i} className={`text-xs px-3 py-2 rounded-xl max-w-[85%] font-medium ${m.role === 'user' ? 'ml-auto bg-[#2A8588] text-white' : 'bg-[#FFFFFF]/20 text-white'}`}>
             {m.text}
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap gap-1 px-2 pt-2" style={{ background: '#3a2a2e' }}>
+      <div className="flex flex-wrap gap-1 px-2 pt-2 bg-[#153A5B]">
         {STUDENT_PROMPTS.map((p) => (
-          <button key={p} onClick={() => send(p)} className="text-[10px] px-2 py-1 rounded-full text-slate-300 border border-slate-700">{p}</button>
+          <button key={p} onClick={() => send(p)} className="text-[10px] px-2 py-1 rounded-full text-[#EDF7F8] border border-[#2A8588] font-bold">{p}</button>
         ))}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2 p-2" style={{ background: '#3a2a2e' }}>
+      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2 p-2 bg-[#153A5B]">
         <input
           value={input} onChange={(e) => setInput(e.target.value)}
           placeholder="Ask a question…"
-          className="flex-1 bg-[#f6ece9] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 outline-none"
+          className="flex-1 bg-[#FFFFFF] rounded-xl px-3 py-1.5 text-xs text-[#153A5B] placeholder:text-[#607580] outline-none font-medium"
         />
-        <button type="submit" className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#7a5963', color: '#fbf3f0' }}>
+        <button type="submit" className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 bg-[#2A8588] text-white">
           <Send size={12} />
         </button>
       </form>
@@ -107,157 +109,152 @@ function StudentPulseChat({ ctx }) {
 }
 
 export default function StudentDashboard() {
+  const { user, isTeacher, logout } = useAuth();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [done, setDone] = useState({ 2: false });
-  const attendance = latestFor(ATTENDANCE_RECORDS);
-  const attendancePrev = prevFor(ATTENDANCE_RECORDS);
-  const academic = latestFor(ACADEMIC_RECORDS);
-  const academicPrev = prevFor(ACADEMIC_RECORDS);
-  const interventions = interventionsForStudent(STUDENT.id);
+
+  const activeStudent = DEFAULT_STUDENT;
+  const displayName = user ? user.name : activeStudent.name;
+  const rollNo = user ? user.rollNumber : activeStudent.enrollment_number;
+
+  const attendance = latestFor(ATTENDANCE_RECORDS, activeStudent.id);
+  const attendancePrev = prevFor(ATTENDANCE_RECORDS, activeStudent.id);
+  const academic = latestFor(ACADEMIC_RECORDS, activeStudent.id);
+  const academicPrev = prevFor(ACADEMIC_RECORDS, activeStudent.id);
+  const interventions = interventionsForStudent(activeStudent.id);
   const activeCase = interventions[0];
   const mentor = activeCase ? USERS.find(u => u.id === activeCase.assigned_to) : null;
 
   const attendanceDelta = Math.round((attendance.attendance_percent - attendancePrev.attendance_percent) * 10) / 10;
   const marksDelta = Math.round((academic.average_marks - academicPrev.average_marks) * 10) / 10;
 
-  const changes = [
-    attendanceDelta < -3 && `Your attendance has decreased recently, from ${attendancePrev.attendance_percent}% to ${attendance.attendance_percent}%.`,
-    academic.assignment_completion < 70 && 'You have pending assignments that need submission.',
-    marksDelta >= -2 && marksDelta <= 2 && 'Your academic performance is stable compared to last period.',
-    academic.lms_activity < 50 && 'Your recent LMS activity is lower than usual — try logging in more regularly.',
-  ].filter(Boolean);
-
   const overallScore = Math.round((attendance.attendance_percent + academic.average_marks + academic.assignment_completion + academic.lms_activity) / 4);
   const overallLabel = overallScore >= 80 ? 'On Track' : overallScore >= 60 ? 'Needs a Little Attention' : 'In Active Recovery';
-  const overallColor = overallScore >= 80 ? '#2f8f4e' : overallScore >= 60 ? '#a97a1f' : '#b8492f';
+  const overallColor = overallScore >= 80 ? '#3A8F6A' : overallScore >= 60 ? '#D9922B' : '#C84C4C';
 
-  const studentNotifications = [
-    { icon: CalendarClock, text: activeCase ? `Upcoming check-in with ${mentor?.name || 'your mentor'} on ${formatDate(activeCase.follow_up_date)}.` : 'No upcoming meetings scheduled.' },
-    { icon: TrendingUp, text: marksDelta >= 0 ? 'Your academic performance held steady or improved last period — nice work.' : 'Your marks dipped slightly last period — tutoring support is available if useful.' },
-    { icon: Bell, text: 'A new tutorial slot was added this week — check My Recovery Plan.' },
-  ];
+  const handleLogout = () => {
+    logout();
+    toast.show('Logged out successfully.', 'info');
+    navigate('/login');
+  };
 
   function toggleTask(id) {
     setDone((d) => ({ ...d, [id]: !d[id] }));
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-paper)', color: 'var(--color-ink)' }}>
-      <header className="border-b" style={{ borderColor: '#e4ddc9' }}>
-        <div className="max-w-4xl mx-auto px-5 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-1.5 text-xs text-[#8a7f63] hover:text-[#3a2a2e]">
-            <ArrowLeft size={13} /> Faculty view
-          </Link>
-          <div className="flex items-center gap-2.5">
-            <StudentAvatar name={STUDENT.name} size={32} />
-            <span className="text-sm font-medium">{STUDENT.name}</span>
+    <div className="min-h-screen bg-[#F8FAF9] text-[#153A5B]">
+      <header className="border-b border-[#D9E8E7] bg-[#EDF7F8]">
+        <div className="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
+          {isTeacher ? (
+            <Link to="/" className="flex items-center gap-1.5 text-xs text-[#2A8588] hover:underline font-extrabold">
+              <ArrowLeft size={13} /> Faculty Command Center
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#3A8F6A]" />
+              <span className="text-xs font-extrabold text-[#153A5B]">Student Academic Portal</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#D9E8E7] shadow-sm">
+              <StudentAvatar name={displayName} size={28} ring="#2A8588" />
+              <div className="text-left">
+                <span className="text-xs font-black text-[#153A5B] block leading-tight">{displayName}</span>
+                <span className="text-[10px] text-[#607580] font-mono block leading-tight">{rollNo}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-xl bg-white border border-[#D9E8E7] text-[#C84C4C] hover:bg-[#C84C4C]/10 transition"
+              title="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-5 py-8">
-        <div className="mb-6">
-          <div className="text-xs uppercase tracking-wider text-[#8a7f63] font-mono mb-1">My Student Pulse</div>
-          <h1 className="font-display text-2xl font-bold">Here's how your semester is going</h1>
-        </div>
-
-        <div className="rounded-2xl p-5 mb-6 flex items-center gap-4" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-          <div className="w-3 h-3 rounded-full shrink-0" style={{ background: overallColor }} />
+      <main className="max-w-5xl mx-auto px-5 py-8 space-y-6">
+        
+        {/* Banner */}
+        <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-wide text-[#8a7f63]">Overall Progress</div>
-            <div className="font-display text-lg font-semibold" style={{ color: overallColor }}>{overallLabel}</div>
+            <div className="text-[11px] uppercase tracking-wider text-[#2A8588] font-mono font-extrabold mb-1">My Student Pulse</div>
+            <h1 className="font-display text-2xl sm:text-3xl font-black text-[#153A5B]">Welcome back, {displayName.split(' ')[0]}!</h1>
+            <p className="text-xs text-[#607580] mt-1 font-medium">Semester progress and personal academic recovery tracking.</p>
+          </div>
+
+          <div className="bg-white px-4 py-2 rounded-2xl border border-[#D9E8E7] shadow-sm flex items-center gap-3">
+            <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: overallColor }} />
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-[#607580] font-bold">Overall Status</div>
+              <div className="font-display text-sm font-extrabold" style={{ color: overallColor }}>{overallLabel}</div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          <ProgressCard label="Attendance" value={attendance.attendance_percent} changeText={attendanceDelta >= 0 ? `+${attendanceDelta} pts` : `${attendanceDelta} pts`} positive={attendanceDelta >= 0} />
-          <ProgressCard label="Academic Performance" value={Math.round(academic.average_marks)} changeText={marksDelta >= 0 ? `+${marksDelta} pts` : `${marksDelta} pts`} positive={marksDelta >= 0} />
-          <ProgressCard label="Assignment Progress" value={Math.round(academic.assignment_completion)} changeText="Completion rate" positive={academic.assignment_completion >= 70} />
-          <ProgressCard label="LMS Engagement" value={academic.lms_activity} changeText="Last 3 weeks" positive={academic.lms_activity >= 60} />
+        {/* Meters Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ProgressCard label="Attendance" value={attendance.attendance_percent} changeText={`${attendanceDelta >= 0 ? '+' : ''}${attendanceDelta}% from last period`} positive={attendanceDelta >= 0} />
+          <ProgressCard label="Average Marks" value={academic.average_marks} changeText={`${marksDelta >= 0 ? '+' : ''}${marksDelta}% overall`} positive={marksDelta >= 0} />
+          <ProgressCard label="Assignments" value={academic.assignment_completion} changeText="On-time submission rate" positive={academic.assignment_completion >= 75} />
+          <ProgressCard label="LMS Activity" value={academic.lms_activity} changeText="Weekly engagement index" positive={academic.lms_activity >= 60} />
         </div>
 
+        {/* Checklist & Support */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <section className="rounded-2xl p-5" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-              <h2 className="font-display font-semibold mb-3">What Changed?</h2>
-              <ul className="space-y-2">
-                {changes.map((c, i) => (
-                  <li key={i} className="text-sm text-[#3c3626] flex items-start gap-2">
-                    <span className="mt-1.5 w-1 h-1 rounded-full bg-[#8a7f63] shrink-0" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </section>
+          <div className="lg:col-span-2 bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 className="font-display font-extrabold text-base text-[#153A5B] flex items-center gap-2">
+              <ShieldCheck className="text-[#3A8F6A]" size={18} />
+              <span>My Recovery Plan & Assigned Tasks</span>
+            </h2>
 
-            <section className="rounded-2xl p-5" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-              <h2 className="font-display font-semibold mb-1">My Recovery Plan</h2>
-              <p className="text-xs text-[#8a7f63] mb-4">Weekly actionable tasks — check them off as you go.</p>
-              <div className="space-y-1">
-                {RECOVERY_TASKS.map((t) => (
-                  <button key={t.id} onClick={() => toggleTask(t.id)} className="w-full flex items-center gap-3 py-2.5 text-left border-b last:border-0" style={{ borderColor: '#e4ddc9' }}>
-                    {done[t.id] ? <CheckCircle2 size={18} className="text-emerald-600 shrink-0" /> : <Circle size={18} className="text-[#c9c0a4] shrink-0" />}
-                    <span className={`text-sm ${done[t.id] ? 'line-through text-[#8a7f63]' : 'text-[#3c3626]'}`}>{t.text}</span>
+            <div className="space-y-2">
+              {RECOVERY_TASKS.map((t) => {
+                const isDone = done[t.id];
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleTask(t.id)}
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
+                      isDone
+                        ? 'bg-[#3A8F6A]/10 border-[#3A8F6A]/30 text-[#607580]'
+                        : 'bg-[#F8FAF9] border-[#D9E8E7] hover:border-[#2A8588] text-[#153A5B]'
+                    }`}
+                  >
+                    {isDone ? <CheckCircle2 size={18} className="text-[#3A8F6A] shrink-0 mt-0.5" /> : <Circle size={18} className="text-[#607580] shrink-0 mt-0.5" />}
+                    <span className={`text-xs font-bold ${isDone ? 'line-through' : ''}`}>{t.text}</span>
                   </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-2xl p-5" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-              <h2 className="font-display font-semibold mb-3">Notifications</h2>
-              <div className="space-y-3">
-                {studentNotifications.map((n, i) => {
-                  const Icon = n.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-2.5 text-sm text-[#3c3626]">
-                      <Icon size={14} className="text-[#8a7f63] mt-0.5 shrink-0" />
-                      {n.text}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-6">
-            <section className="rounded-2xl p-5" style={{ background: '#3a2a2e' }}>
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck size={16} className="text-teal-400" />
-                <h2 className="font-display font-semibold text-slate-100">Support Status</h2>
-              </div>
-              {activeCase ? (
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500">Assigned mentor</div>
-                    <div className="text-slate-200 mt-0.5">{mentor?.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500">Next action</div>
-                    <div className="text-slate-200 mt-0.5">{activeCase.intervention_label}</div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500">Next meeting</div>
-                    <div className="text-slate-200 mt-0.5 flex items-center gap-1.5"><Calendar size={12} />{formatDate(activeCase.follow_up_date)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500">Case status</div>
-                    <div className="text-slate-200 mt-0.5">{activeCase.status.replace('_', ' ')}</div>
-                  </div>
+            <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 shadow-sm space-y-4">
+              <h2 className="font-display font-extrabold text-base text-[#153A5B]">Support Case Status</h2>
+              <div className="text-xs space-y-2 text-[#607580]">
+                <div>
+                  <span className="font-bold text-[#153A5B] block">Assigned Mentor:</span>
+                  <span>{mentor?.name || 'Dr. Himani Kaur'} ({mentor?.role || 'Faculty'})</span>
                 </div>
-              ) : (
-                <p className="text-sm text-slate-400">No active support case right now — keep up the good work.</p>
-              )}
-            </section>
-
-            <section className="rounded-2xl p-5" style={{ background: '#faf8f2', border: '1px solid #e4ddc9' }}>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={15} className="text-[#8a7f63]" />
-                <h2 className="font-display font-semibold text-sm">Ask Pulse AI</h2>
+                {activeCase && (
+                  <div>
+                    <span className="font-bold text-[#153A5B] block">Next Follow-up Date:</span>
+                    <span>{formatDate(activeCase.follow_up_date)}</span>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-[#6b6249] mb-3">Get simple, constructive answers about your progress and next steps.</p>
-              <StudentPulseChat ctx={{ overallLabel, attendanceDelta, activeCase, mentor }} />
-            </section>
+            </div>
+
+            <StudentPulseChat ctx={{ overallLabel, attendanceDelta, activeCase, mentor }} />
           </div>
         </div>
+
       </main>
     </div>
   );

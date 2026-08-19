@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, ChevronDown, CalendarDays, Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
-import { STUDENTS, NOTIFICATIONS, CURRENT_USER } from '@/data/mockData';
+import { Search, Bell, Menu, ChevronDown, CalendarDays, Sun, Moon, Settings as SettingsIcon, LogOut } from 'lucide-react';
+import { STUDENTS, NOTIFICATIONS } from '@/data/mockData';
 import StudentAvatar from '@/components/ui/StudentAvatar';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/Toast';
 
 export default function Topbar({ onOpenMobile }) {
   const [query, setQuery] = useState('');
@@ -10,6 +12,8 @@ export default function Topbar({ onOpenMobile }) {
   const [highContrast, setHighContrast] = useState(false);
   const navigate = useNavigate();
   const boxRef = useRef(null);
+  const { user, logout, isTeacher } = useAuth();
+  const toast = useToast();
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-contrast', highContrast);
@@ -26,6 +30,15 @@ export default function Topbar({ onOpenMobile }) {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    toast.show('You have been logged out.', 'info');
+    navigate('/login');
+  };
+
+  const displayName = user ? user.name : 'Guest User';
+  const displayRole = user ? (user.role === 'TEACHER' ? 'Faculty / Teacher' : 'Student') : 'Guest';
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-[#D9E8E7] bg-[#EDF7F8]/95 backdrop-blur px-4 lg:px-6 flex items-center justify-between gap-4">
@@ -96,14 +109,21 @@ export default function Topbar({ onOpenMobile }) {
           )}
         </button>
 
-        {/* DR. HIMANI KAUR PROFILE BADGE */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-[#D9E8E7] shrink-0 bg-[#FFFFFF] px-3 py-1.5 rounded-xl shadow-sm border border-[#D9E8E7]">
-          <StudentAvatar name={CURRENT_USER.name} size={32} ring="#2A8588" />
+        {/* AUTHENTICATED USER PROFILE BADGE & LOGOUT */}
+        <div className="flex items-center gap-2 pl-3 border-l border-[#D9E8E7] shrink-0 bg-[#FFFFFF] px-3 py-1 rounded-xl shadow-sm border border-[#D9E8E7]">
+          <StudentAvatar name={displayName} size={30} ring="#2A8588" />
           <div className="leading-tight">
-            <div className="text-xs font-black text-[#153A5B] whitespace-nowrap">{CURRENT_USER.name}</div>
-            <div className="text-[10px] text-[#2A8588] font-extrabold uppercase">{CURRENT_USER.role === 'FACULTY' ? 'Faculty' : CURRENT_USER.role}</div>
+            <div className="text-xs font-black text-[#153A5B] whitespace-nowrap">{displayName}</div>
+            <div className="text-[10px] text-[#2A8588] font-extrabold uppercase">{displayRole}</div>
           </div>
-          <ChevronDown size={14} className="text-[#153A5B] shrink-0" />
+
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            className="ml-1 p-1 rounded-lg hover:bg-[#C84C4C]/15 text-[#C84C4C] transition"
+          >
+            <LogOut size={15} />
+          </button>
         </div>
 
       </div>

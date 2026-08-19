@@ -3,8 +3,8 @@ import { CheckCircle2, Info, AlertTriangle, X } from 'lucide-react';
 
 const ToastCtx = createContext(null);
 
-const ICONS = { success: CheckCircle2, info: Info, warning: AlertTriangle };
-const COLORS = { success: '#9fe066', info: '#c98f9f', warning: '#eaa73f' };
+const ICONS = { success: CheckCircle2, info: Info, warning: AlertTriangle, error: AlertTriangle };
+const COLORS = { success: '#3A8F6A', info: '#2A8588', warning: '#D9922B', error: '#C84C4C' };
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -18,16 +18,16 @@ export function ToastProvider({ children }) {
   const dismiss = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
   return (
-    <ToastCtx.Provider value={{ push }}>
+    <ToastCtx.Provider value={{ push, show: push }}>
       {children}
       <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80">
         {toasts.map((t) => {
-          const Icon = ICONS[t.type];
+          const Icon = ICONS[t.type] || Info;
           return (
-            <div key={t.id} className="panel-alt shadow-lg px-3.5 py-3 flex items-start gap-2.5 count-up">
-              <Icon size={16} style={{ color: COLORS[t.type] }} className="mt-0.5 shrink-0" />
-              <span className="text-sm text-slate-200 flex-1">{t.message}</span>
-              <button onClick={() => dismiss(t.id)} className="text-slate-500 hover:text-slate-300">
+            <div key={t.id} className="bg-white border border-[#D9E8E7] rounded-2xl shadow-xl px-3.5 py-3 flex items-start gap-2.5 count-up">
+              <Icon size={16} style={{ color: COLORS[t.type] || '#2A8588' }} className="mt-0.5 shrink-0" />
+              <span className="text-xs font-extrabold text-[#153A5B] flex-1">{t.message}</span>
+              <button onClick={() => dismiss(t.id)} className="text-[#607580] hover:text-[#153A5B]">
                 <X size={14} />
               </button>
             </div>
@@ -39,5 +39,9 @@ export function ToastProvider({ children }) {
 }
 
 export function useToast() {
-  return useContext(ToastCtx);
+  const ctx = useContext(ToastCtx);
+  if (!ctx) {
+    return { push: () => {}, show: () => {} };
+  }
+  return ctx;
 }
