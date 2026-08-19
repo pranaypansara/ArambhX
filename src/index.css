@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* ---- Foundation (Dusty Rose + Pearl, light theme) ---- */
+  --color-void: #F3E7E4;
+  --color-deep: #EDE0DD;
+  --color-panel: #FFF8F7CC;
+  --color-panel-solid: #FFFFFF;
+  --color-panel-alt: #F6ECE9;
+  --color-hairline: #E6D3D6;
+  --color-hairline-soft: #EFE1DF;
+
+  /* ---- Accents ---- */
+  --color-teal: #7A5963;
+  --color-teal-dim: #5C4249;
+  --color-cobalt: #C98F9F;
+  --color-cobalt-dim: #8F6570;
+  --color-lime: #9fe066;
+  --color-lime-dim: #5f8a34;
+  --color-amber: #eaa73f;
+  --color-amber-dim: #8f6521;
+  --color-coral: #ef6355;
+  --color-coral-dim: #8f342a;
+
+  /* ---- Surfaces (student side / light) ---- */
+  --color-paper: #f6f3ec;
+  --color-paper-alt: #eaeadf;
+  --color-ink: #3A2A2E;
+
+  /* ---- Tailwind default-scale overrides (slate + teal used throughout) ---- */
+  --color-slate-50: #2B1F22;
+  --color-slate-100: #2B1F22;
+  --color-slate-200: #3A2A2E;
+  --color-slate-300: #5C4249;
+  --color-slate-400: #9C8288;
+  --color-slate-500: #8B6B72;
+  --color-slate-600: #6B4F56;
+  --color-slate-700: #5C4249;
+  --color-slate-800: #3A2A2E;
+  --color-slate-900: #2B1F22;
+
+  --color-teal-300: #7A5963;
+  --color-teal-400: #7A5963;
+  --color-teal-500: #7A5963;
+
+  --font-display: 'Sora', 'IBM Plex Sans', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-void);
+  color: #3A2A2E;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-teal);
+  color: #FBF3F0;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D9C3C7; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #C9A8AE; }
+
+/* Focus visibility */
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---- Reusable primitives ---- */
+.panel {
+  background: linear-gradient(180deg, var(--color-panel-solid), #FFFFFF);
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(122, 89, 99, 0.06);
+}
+
+.panel-alt {
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-hairline);
+  border-radius: 14px;
+}
+
+.hairline { border-color: var(--color-hairline); }
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+
+.pulse-dot {
+  animation: pulseDot 2.2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 99, 85, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 99, 85, 0); }
+}
+
+.count-up {
+  animation: countUpFade 0.6s ease-out;
+}
+@keyframes countUpFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.draw-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawLine 1.4s ease-out forwards;
+}
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #EDE0DD 25%, #F6ECE9 37%, #EDE0DD 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.node-in {
+  animation: nodeIn 0.7s cubic-bezier(.2,.8,.2,1) backwards;
+}
+@keyframes nodeIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.chip {
+  border: 1px solid var(--color-hairline);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.chip:hover {
+  border-color: var(--color-teal);
+  background: rgba(122, 89, 99, 0.08);
+}
+
+/* High-contrast mode toggled from the top nav — brightens panel borders and
+   text for low-light or accessibility needs without changing the palette. */
+.theme-contrast .panel,
+.theme-contrast .panel-alt {
+  border-color: #C9A8AE !important;
+}
+.theme-contrast body {
+  color: #2B1F22;
+}
+.theme-contrast .text-slate-400 {
+  color: #6B4F56 !important;
+}
+.theme-contrast .text-slate-500 {
+  color: #4A363B !important;
+}
