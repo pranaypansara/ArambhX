@@ -25,6 +25,21 @@ THRESHOLD_PATH: Path = Path(
     os.environ.get("ML1_THRESHOLD_PATH", str(MODELS_DIR / "ml1_threshold.pkl"))
 )
 
+# ML2 risk-intelligence artifacts (Phase 8). These are the small pickles the ML
+# team exported from the ML-2 pipeline; they hold the trained/defined engines
+# (SmartAlertEngine, InterventionEngine) and the intervention catalog.
+ML2_ALERT_ENGINE_PATH: Path = Path(
+    os.environ.get("ML2_ALERT_ENGINE_PATH", str(MODELS_DIR / "ml2_smart_alert_engine.pkl"))
+)
+
+ML2_INTERVENTION_ENGINE_PATH: Path = Path(
+    os.environ.get("ML2_INTERVENTION_ENGINE_PATH", str(MODELS_DIR / "ml2_intervention_engine.pkl"))
+)
+
+ML2_CATALOG_PATH: Path = Path(
+    os.environ.get("ML2_CATALOG_PATH", str(MODELS_DIR / "ml2_intervention_catalog.pkl"))
+)
+
 # development | production. Currently informational only.
 APP_ENV: str = os.environ.get("APP_ENV", "development")
 

@@ -21,6 +21,7 @@ import {
   getStudentPredictions,
   getStudentLatestPrediction
 } from '../controllers/prediction.controller.js';
+import { analyzeStudent } from '../controllers/riskAnalysis.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -137,6 +138,14 @@ router.get(
   protect,
   authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
   getStudentLatestPrediction
+);
+
+// Phase 8: ML2 risk-intelligence analysis via the FastAPI ML2 service
+router.post(
+  '/:id/risk-analysis',
+  protect,
+  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
+  analyzeStudent
 );
 
 export default router;
