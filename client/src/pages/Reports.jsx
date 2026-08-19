@@ -63,7 +63,7 @@ export default function Reports() {
   }, []);
 
   function exportSummary() {
-    downloadCsv('arambh-ascend-student-risk-summary.csv', ALL_STUDENT_SUMMARIES.map(s => ({
+    downloadCsv('arambhx-student-risk-summary.csv', ALL_STUDENT_SUMMARIES.map(s => ({
       student: s.student.name,
       enrollment_number: s.student.enrollment_number,
       department: s.student.department,

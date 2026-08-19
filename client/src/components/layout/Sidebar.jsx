@@ -49,7 +49,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         <div className="flex items-center gap-2.5 px-5 h-16 shrink-0" style={{ borderBottom: '1px solid #D9E8E7' }}>
           <img src="/academic-logo.png" alt="Academic Logo" className="w-10 h-10 object-contain shrink-0" />
           <div className="leading-tight">
-            <div className="font-display font-black text-sm tracking-tight" style={{ color: '#153A5B' }}>ARAMBH ASCEND</div>
+            <div className="font-display font-black text-[#153A5B] text-base tracking-tight">ArambhX</div>
             <div className="text-[10px] font-mono tracking-wide font-extrabold" style={{ color: '#2A8588' }}>STUDENT PULSE</div>
           </div>
         </div>

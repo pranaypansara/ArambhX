@@ -230,8 +230,8 @@ export default function AuthPage() {
           <img src="/academic-logo.png" alt="Academic Logo" className="w-20 h-20 object-contain drop-shadow-md" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#153A5B] tracking-tight">
-            ARAMBH ASCEND
+          <h1 className="text-3xl sm:text-4xl font-black text-[#153A5B] tracking-tight">
+            ArambhX
           </h1>
           <p className="text-xs font-mono font-bold text-[#2A8588] tracking-wider uppercase mt-0.5">
             Student Dropout & Intervention System

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Mock data layer for ARAMBH ASCEND.
+// Mock data layer for ArambhX.
 // Shaped to mirror the Neon/Postgres schema 1:1 so swapping this module for
 // real `fetch()` calls against the Express API requires no changes upstream.
 // Tables: users, students, attendance_records, academic_records, predictions,
