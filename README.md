@@ -1,4 +1,4 @@
-# ARAMBH ASCEND — Student Pulse
+# ARAMBHX — Student Pulse
 
 AI-powered Academic Dropout Prediction & Intervention System — frontend.
 
