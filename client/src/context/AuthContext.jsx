@@ -1,18 +1,29 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { api, setAuthToken, setOnUnauthorized } from '@/services/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import { api, setAuthToken, setOnUnauthorized } from "@/services/api";
+import { clearSummaryCache } from "@/services/data";
 
 const AuthContext = createContext();
-const TOKEN_KEY = 'arambh_token';
-const USER_KEY = 'arambh_user';
+const TOKEN_KEY = "arambh_token";
+const USER_KEY = "arambh_user";
 
-const BACKEND_ROLES = ['ADMIN', 'FACULTY', 'COUNSELOR', 'STUDENT'];
+const BACKEND_ROLES = ["ADMIN", "FACULTY", "COUNSELOR", "STUDENT"];
 
 const readStoredUser = () => {
   try {
     const saved = localStorage.getItem(USER_KEY);
     if (!saved) return null;
     const parsed = JSON.parse(saved);
-    const valid = parsed && typeof parsed.id === 'number' && BACKEND_ROLES.includes(parsed.role);
+    const valid =
+      parsed &&
+      typeof parsed.id === "number" &&
+      BACKEND_ROLES.includes(parsed.role);
     return valid ? parsed : null;
   } catch (e) {
     return null;
@@ -23,12 +34,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(readStoredUser);
   const [initializing, setInitializing] = useState(true);
   const restoringRef = useRef(false);
+  const authVersionRef = useRef(0);
 
   const clearSession = useCallback(() => {
+    authVersionRef.current += 1;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setAuthToken(null);
     setUser(null);
+    clearSummaryCache();
   }, []);
 
   useEffect(() => {
@@ -46,15 +60,26 @@ export const AuthProvider = ({ children }) => {
     setAuthToken(token);
     if (restoringRef.current) return;
     restoringRef.current = true;
+    const restoreVersion = authVersionRef.current;
 
-    api.me()
+    api
+      .me()
       .then((res) => {
+        if (
+          restoreVersion !== authVersionRef.current ||
+          localStorage.getItem(TOKEN_KEY) !== token
+        )
+          return;
         const fresh = res.data;
         setUser(fresh);
         localStorage.setItem(USER_KEY, JSON.stringify(fresh));
       })
       .catch(() => {
-        clearSession();
+        if (
+          restoreVersion === authVersionRef.current &&
+          localStorage.getItem(TOKEN_KEY) === token
+        )
+          clearSession();
       })
       .finally(() => {
         setInitializing(false);
@@ -65,6 +90,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (email, password) => {
     const res = await api.login({ email, password });
+    authVersionRef.current += 1;
+    clearSummaryCache();
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
     setAuthToken(res.token);
@@ -73,7 +100,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const register = useCallback(async ({ name, email, password, studentId }) => {
-    const res = await api.register({ name, email, password, studentId: studentId || null });
+    const res = await api.register({
+      name,
+      email,
+      password,
+      studentId: studentId || null,
+    });
     // Public registration returns the profile only — the user must sign in afterwards.
     return res.data;
   }, []);
@@ -88,13 +120,13 @@ export const AuthProvider = ({ children }) => {
     role,
     isAuthenticated: !!user,
     initializing,
-    isAdmin: role === 'ADMIN',
-    isFaculty: role === 'FACULTY',
-    isCounselor: role === 'COUNSELOR',
-    isStudent: role === 'STUDENT',
-    isStaff: role === 'ADMIN' || role === 'FACULTY' || role === 'COUNSELOR',
+    isAdmin: role === "ADMIN",
+    isFaculty: role === "FACULTY",
+    isCounselor: role === "COUNSELOR",
+    isStudent: role === "STUDENT",
+    isStaff: role === "ADMIN" || role === "FACULTY" || role === "COUNSELOR",
     studentId: user?.studentId ?? null,
-    displayName: user?.name || '',
+    displayName: user?.name || "",
     displayRole: role,
     login,
     register,
@@ -107,7 +139,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

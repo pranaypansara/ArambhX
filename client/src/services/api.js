@@ -36,8 +36,9 @@ function buildQuery(params) {
 async function request(method, path, { params, body } = {}) {
   const url = `${API_BASE_URL}${path}${buildQuery(params)}`;
   const headers = { Accept: "application/json" };
+  const requestToken = _token;
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (_token) headers.Authorization = `Bearer ${_token}`;
+  if (requestToken) headers.Authorization = `Bearer ${requestToken}`;
 
   let res;
   try {
@@ -62,7 +63,14 @@ async function request(method, path, { params, body } = {}) {
   }
 
   if (!res.ok) {
-    if (res.status === 401 && _onUnauthorized) _onUnauthorized();
+    if (
+      res.status === 401 &&
+      requestToken &&
+      requestToken === _token &&
+      _onUnauthorized
+    ) {
+      _onUnauthorized();
+    }
     throw new ApiError(
       payload?.message || `Request failed (${res.status})`,
       res.status,
