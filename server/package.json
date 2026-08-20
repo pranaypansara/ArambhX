@@ -9,6 +9,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "test": "tsx test-api.ts",
+    "seed:demo-more": "tsx src/scripts/seedAdditionalDemoData.ts",
     "seed:ml": "tsx src/scripts/seedMlTestData.ts",
     "test:ml-features": "tsx src/scripts/verifyMlFeatures.ts"
   },
