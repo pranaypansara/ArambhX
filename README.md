@@ -1,7 +1,7 @@
-# ARAMBH ASCEND
+# ARAMBHX
 
 
-ARAMBH ASCEND is an AI-powered student dropout risk monitoring and intervention system. It helps institutions identify students who may be at risk, analyze their academic and engagement patterns, generate predictions using machine learning, and support staff in taking timely interventions.
+ARAMBHX is an AI-powered student dropout risk monitoring and intervention system. It helps institutions identify students who may be at risk, analyze their academic and engagement patterns, generate predictions using machine learning, and support staff in taking timely interventions.
 
 
 The system combines a React frontend, Express backend, Neon PostgreSQL database, and Python-based ML services.
@@ -431,7 +431,7 @@ Do not commit .env files containing real credentials.
 The frontend, backend, and ML service must all be running for the complete system to work locally.
 Security
 
-ARAMBH ASCEND uses:
+ARAMBHX uses:
 
 JWT-based authentication
 Role-based access control
@@ -505,6 +505,6 @@ License
 
 This project is developed as part of an academic and hackathon project.
 
-ARAMBH ASCEND
+ARAMBHX
 
 AI-powered student risk monitoring, prediction, and intervention management system.
