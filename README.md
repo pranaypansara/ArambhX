@@ -1,350 +1,510 @@
-# 🎓 AARAMBH ASCEND™
+# ARAMBH ASCEND
 
-An AI-powered decision-support system designed to identify students at risk of dropping out and enable educational institutions to take proactive, early intervention steps.
 
-[![SIH](https://img.shields.io/badge/Smart%20India%20Hackathon-2024%2F2026-blue.svg)](https://sih.gov.in/)
-[![SDG 4](https://img.shields.io/badge/SDG%204-Quality%20Education-E5243B.svg)](https://sdgs.un.org/goals/goal4)
-[![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20FastAPI-green.svg)](#-tech-stack)
+ARAMBH ASCEND is an AI-powered student dropout risk monitoring and intervention system. It helps institutions identify students who may be at risk, analyze their academic and engagement patterns, generate predictions using machine learning, and support staff in taking timely interventions.
 
----
 
-## 📌 Problem Statement
+The system combines a React frontend, Express backend, Neon PostgreSQL database, and Python-based ML services.
 
-Students rarely drop out without warning. They consistently demonstrate subtle behavioral and academic shifts long before making the decision to leave:
-
-* 📉 **Declining Academic Performance:** Gradual drops in quiz and exam grades.
-* 💤 **Low Platform Engagement:** Decreased access to LMS materials and lectures.
-* ⏰ **Assignment Delays:** Late submissions and missed deadlines.
-* 📊 **Inconsistent Activity:** Spiky or decaying interaction patterns over time.
-
-Because these critical signals are fragmented across disconnected institutional systems (LMS, examination portals, registrar records), faculty members often miss them until it is too late. **AARAMBH ASCEND™** aggregates and analyzes these multi-source signals in real time to deliver actionable early warnings.
 
 ---
 
-## 🎯 Key Features & Functionality
 
-* **Multi-Source Data Aggregation:** Seamlessly ingests student academic records, assignment histories, and LMS telemetry.
-* **Automated Feature Engineering:** Transforms raw interaction logs into ML-ready behavioral indicators.
-* **Predictive Risk Scoring:** Uses machine learning models to calculate precise dropout probabilities.
-* **Risk Intelligence & History:** Tracks risk trends over time to see if a student is improving or deteriorating.
-* **Smart Alerts & Interventions:** Automatically flags vulnerable students and tracks faculty-led intervention outcomes.
-* **Human-in-the-Loop Design:** Serves strictly as a decision-support aid for educators rather than an automated grading or disciplinary tool.
+## Features
+
+
+- Role-based authentication
+- Four user roles:
+  - ADMIN
+  - FACULTY
+  - COUNSELOR
+  - STUDENT
+- Student monitoring and profiles
+- Student ownership restrictions
+- ML-based dropout risk prediction
+- ML risk intelligence and trend analysis
+- Prediction history
+- Risk levels and probabilities
+- High-risk student identification
+- Smart alerts
+- Intervention recommendations
+- Intervention status tracking
+- Notification system
+- Reports and analytics
+- Outcomes and impact tracking
+- Risk trend visualization
+- Academic and student data analysis
+- Admin audit logs
+- Real-time data from Neon PostgreSQL
+- Historical student data for meaningful charts and trends
+
 
 ---
 
-## 🏗 System Architecture
 
-**AARAMBH ASCEND™** employs a decoupled architecture, separating the core API layer from the dedicated Python ML inference pipeline to ensure scalability and independent model deployment.
+# System Architecture
+
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                        React + Vite UI                          │
-└────────────────────────────────┬────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     Node.js + Express API                       │
-│  (Auth, Business Logic, Raw Parameterized SQL, Feature Builder) │
-└──────────────┬──────────────────────────────────┬───────────────┘
-               │                                  │
-               ▼                                  ▼
-┌──────────────────────────────┐  ┌───────────────────────────────┐
-│     Neon PostgreSQL DB       │  │      FastAPI ML Service       │
-│  (Student Data & Analytics)  │  │   (Model Inference & Schema)  │
-└──────────────────────────────┘  └───────────────────────────────┘
-```
+                         ┌─────────────────────┐
+                         │      Frontend       │
+                         │    React + Vite     │
+                         │     Port: 5173      │
+                         └──────────┬──────────┘
+                                    │
+                                    │ API Requests
+                                    ▼
+                         ┌─────────────────────┐
+                         │      Backend        │
+                         │ Express + TypeScript│
+                         │     Port: 5000      │
+                         └───────┬───────┬─────┘
+                                 │       │
+                                 │       │
+                                 ▼       ▼
+                    ┌────────────────┐  ┌─────────────────┐
+                    │ Neon PostgreSQL│  │   ML Service    │
+                    │                │  │ Python + FastAPI│
+                    └────────────────┘  │   Port: 8000    │
+                                        └────────┬────────┘
+                                                 │
+                                      ┌──────────┴──────────┐
+                                      │                     │
+                                      ▼                     ▼
+                                   ML1 Model             ML2 Model
+                              Risk Prediction       Risk Intelligence
+Tech Stack
+Frontend
+React
+Vite
+JavaScript
+React Router
+Charts and data visualization
+Backend
+Node.js
+Express.js
+TypeScript
+JWT Authentication
+Role-Based Access Control
+Database
+Neon PostgreSQL
+Machine Learning
+Python
+FastAPI
+Scikit-learn
+XGBoost
+Pandas
+NumPy
+Joblib
+User Roles
+ADMIN
 
-### End-to-End Prediction Flow
+Administrators can access system-wide information and management features.
 
-```text
-[ Select Student ID ] ──► [ Fetch Neon DB Records ] ──► [ Build ML Feature Payload ]
-                                                                  │
-[ Trigger Interventions ] ◄── [ Store Risk Score ] ◄── [ Execute ML Model In FastAPI ]
-```
+Capabilities include:
 
----
+View student data
+Monitor student risk
+View alerts
+Manage interventions
+Access reports
+View audit logs
+Monitor overall system activity
+FACULTY
 
-## 💻 Tech Stack
+Faculty members can monitor students and access relevant academic and risk information.
 
-| Domain | Technologies |
-| --- | --- |
-| **Frontend** | React, Vite, TypeScript, Tailwind CSS / UI Libraries |
-| **Backend API** | Node.js, Express, TypeScript |
-| **Database** | Neon PostgreSQL (Raw Parameterized SQL) |
-| **Machine Learning** | Python, FastAPI, Scikit-learn, Pandas, NumPy |
-| **Tooling & Ops** | Git, npm, Uvicorn |
+Capabilities include:
 
----
+View assigned or accessible student data
+Monitor student risk
+View predictions
+View alerts
+Support interventions
+Access reports and analytics
+COUNSELOR
 
-## 📂 Project Structure
+Counselors focus on students requiring attention and intervention.
 
-```text
-ARAMBH-ASCEND/
-├── client/                         # React Frontend Application
+Capabilities include:
+
+View high-risk students
+View smart alerts
+Review risk factors
+Manage interventions
+Track intervention progress
+Monitor outcomes
+STUDENT
+
+Students have restricted access to their own information.
+
+Capabilities include:
+
+View their own dashboard
+View authorized academic and student information
+Access relevant support information
+
+Students cannot access another student's data.
+
+ML Pipeline
+
+The system uses a two-stage machine learning pipeline.
+
+Student Data
+      │
+      ▼
+Feature Generation
+      │
+      ▼
+ML1: Dropout Risk Prediction
+      │
+      ▼
+Risk Probability + Risk Level
+      │
+      ▼
+Store Prediction in Neon PostgreSQL
+      │
+      ▼
+Prediction History
+      │
+      ▼
+ML2: Risk Intelligence
+      │
+      ├── Risk Trend
+      ├── Risk Velocity
+      ├── Risk History Analysis
+      └── Recommendations
+      │
+      ▼
+Alert Generation
+      │
+      ▼
+Intervention Recommendation
+      │
+      ▼
+Intervention Tracking
+      │
+      ▼
+Notifications
+
+The ML service exposes:
+
+GET /health
+POST /predict
+POST /ml2/analyze
+Project Structure
+Smart-India-Hackathon/
+│
+├── client/
 │   ├── src/
 │   ├── public/
-│   └── package.json
+│   ├── package.json
+│   └── ...
 │
-├── server/                         # Main Node.js Backend
+├── server/
 │   ├── src/
-│   │   ├── config/                 # DB & App Configurations
-│   │   ├── controllers/            # API Route Handlers
-│   │   ├── middleware/             # Auth & Validation
-│   │   ├── routes/                 # Express Routes
-│   │   ├── services/               # Feature Builder & Logic
-│   │   └── types/                  # TypeScript Interfaces
+│   ├── ml/
+│   │   └── service/
+│   │       ├── main.py
+│   │       ├── requirements.txt
+│   │       ├── venv/
+│   │       └── ...
 │   │
-│   └── ml/
-│       ├── source/                 # Local ML Training Workspace (Git-ignored)
-│       └── service/                # Deployment-ready FastAPI Service
-│           ├── main.py             # FastAPI Application Entrypoint
-│           ├── requirements.txt    # Python Dependencies
-│           └── app/                # Models, Schemas, & Prediction Services
+│   ├── package.json
+│   ├── .env
+│   └── ...
 │
-├── README.md
-└── .gitignore
-```
+└── README.md
+Prerequisites
 
----
+Make sure the following are installed:
 
-## 📊 Data & Model Features
+Node.js 18+
+npm
+Python 3.11+
+pip
+Git
 
-The system computes features across four primary dimensions to assess risk:
+You also need access to the project's Neon PostgreSQL database.
 
-1. **Demographic & Background:** Gender, region, age band, previous attempts, studied credits, disability status.
-2. **Academic Performance:** Assessment scores, quiz completion rates, ratio of missed tests.
-3. **Submission Behavior:** Late submission frequency, average delay in days, status history.
-4. **LMS Engagement:** Total clicks, active learning days, platform activity frequency, decay rates.
+Environment Setup
+Backend Environment Variables
 
----
+Create a .env file inside:
 
-## 🗺 Development Roadmap
+server/.env
 
-| Phase | Description | Status |
-| --- | --- | --- |
-| **01** | Core Backend Foundation & Node Setup | ✅ Completed |
-| **02** | Neon PostgreSQL Schema & DB Integration | ✅ Completed |
-| **03** | Automated ML Feature Builder Pipeline | ✅ Completed |
-| **04** | Synthetic Test Data & Seed Scripts | ✅ Completed |
-| **05** | Standalone FastAPI Prediction Microservice | ✅ Completed |
-| **06** | Express-to-FastAPI Integration | ✅ Completed |
-| **07** | Historical Prediction Storage & Auditing | ✅ Completed |
-| **08** | ML2 Risk Intelligence Engine | ✅ Completed |
-| **09** | Automated Smart Alerts | ✅ Completed |
-| **10** | Intervention Recommendation & Outcome Tracker | ✅ Completed |
-| **11** | Faculty & Administrator Analytics Dashboards | ✅ Completed |
-| **12** | Complete System Audit Logs & Role Permissions | ✅ Completed |
-| **13** | E2E Testing, Optimization & Demo Readiness | ✅ Completed |
+Add the required environment variables used by the backend.
 
----
+Example:
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-* Node.js (v18+)
-* Python (v3.9+)
-* Neon PostgreSQL Account (or local Postgres instance)
-
----
-
-### 1. Repository Setup
-
-```bash
-git clone [https://github.com/your-username/ARAMBH-ASCEND.git](https://github.com/your-username/ARAMBH-ASCEND.git)
-cd ARAMBH-ASCEND
-```
-
----
-
-### 2. Frontend Setup
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
----
-
-### 3. Backend Setup
-
-```bash
-cd ../server
-npm install
-```
-
-Create a `.env` file inside the `server/` directory:
-
-```env
-PORT=5000
-DATABASE_URL=postgresql://user:password@ep-example-123456.neon.tech/neondb?sslmode=require
+DATABASE_URL=your_neon_postgresql_connection_string
+JWT_SECRET=your_jwt_secret
 ML_SERVICE_URL=http://localhost:8000
-```
 
-Start the backend development server:
+Use the actual environment variable names required by the current backend implementation.
 
-```bash
+Never commit your real .env file or database credentials.
+
+Frontend Environment Variables
+
+If required by your frontend configuration, create:
+
+client/.env
+
+For local development:
+
+VITE_API_BASE_URL=/api
+
+The Vite development server proxies API requests to the backend.
+
+How to Run the Project
+
+The project consists of three services:
+
+ML Service
+Backend
+Frontend
+
+Open three separate Git Bash terminals.
+
+1. Start the ML Service
+
+Open the first Git Bash terminal.
+
+cd "/c/Coding Projects/SIH 2026/Smart-India-Hackathon/server/ml/service"
+
+Activate the Python virtual environment:
+
+source venv/Scripts/activate
+
+Start the FastAPI ML service:
+
+python main.py
+
+The ML service runs on:
+
+http://localhost:8000
+
+Verify it by opening:
+
+http://localhost:8000/health
+
+Expected response should indicate that the service and models are loaded, similar to:
+
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "ml2_loaded": true
+}
+2. Start the Backend
+
+Open the second Git Bash terminal.
+
+cd "/c/Coding Projects/SIH 2026/Smart-India-Hackathon/server"
+
+Start the backend:
+
 npm run dev
-```
 
----
+The backend runs on:
 
-### 4. ML Service Setup
+http://localhost:5000
 
-```bash
-cd ml/service
+Verify it using:
 
-# Create and activate virtual environment
-python -m venv venv
+http://localhost:5000/api/health
 
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+The backend connects to:
 
-# Install dependencies
-pip install -r requirements.txt
+Neon PostgreSQL
+JWT authentication
+ML service running on port 8000
+3. Start the Frontend
 
-# Launch FastAPI service
-uvicorn main:app --reload --port 8000
-```
+Open the third Git Bash terminal.
 
-#### ML Endpoint Diagnostics
+cd "/c/Coding Projects/SIH 2026/Smart-India-Hackathon/client"
 
-* **Health Check:** `GET http://localhost:8000/health`
-* **Run Inference:** `POST http://localhost:8000/predict`
+Start the frontend:
 
----
+npm run dev
 
-## Development status
+The frontend runs on:
 
-| Phase | Area | Status |
-|-------|------|--------|
-| 1 | Backend foundation (Node/Express/TS, Neon, raw SQL) | Completed |
-| 2 | Database & API foundation (auth, RBAC, students, records) | Completed |
-| 3 | ML feature builder (`GET /api/students/:id/ml-features`) | Completed |
-| 4 | ML demo/test data seeding + feature validation | Completed |
-| 5 | Standalone FastAPI ML1 prediction service (`server/ml/service`) | Completed |
-| 6 | Node.js ↔ FastAPI integration (`POST /api/students/:id/predict`) | Completed |
-| 7 | Prediction storage and history (`POST /api/students/:id/predict`, `GET /api/students/:id/predictions`) | Completed |
-| 8+ | Alerts, interventions, dashboards | Planned |
+http://localhost:5173
 
-## Backend & ML service architecture
+Open the application:
 
-```
-             ┌────────────────────────────────┐
-             │   Node.js / Express backend    │
-             │   (server/)                    │
-             │  • auth + RBAC                 │
-             │  • students / records APIs     │
-             │  • ML feature builder (Ph. 3)  │
-             │  • prediction orchestration    │
-             │  • prediction storage (Ph. 7)  │
-             └──────────────┬─────────────────┘
-                            │ HTTP (JSON)
-                            ▼
-             ┌────────────────────────────────┐
-             │   FastAPI ML1 service          │
-             │   (server/ml/service/)         │
-             │  • loads ML1 pipeline (Ph. 5)  │
-             │  • validates feature payload   │
-             │  • runs prediction + threshold │
-             └──────────────┬─────────────────┘
-                            │
-                            ▼
-             ┌────────────────────────────────┐
-             │   Neon PostgreSQL              │
-             │  • predictions table           │
-             │  • prediction_factors table    │
-             └────────────────────────────────┘
-```
+http://localhost:5173
+Demo Accounts
 
-### ML prediction flow (Phase 7)
+The following demo accounts are available for testing.
 
-1. Client calls `POST /api/students/:studentId/predict`
-2. Backend validates the student ID and confirms the student exists
-3. Backend builds the exact 35-field ML1 feature payload using the Phase 3 feature builder
-4. Backend sends the payload to the FastAPI ML service `POST /predict`
-5. FastAPI validates the payload against its Pydantic schema
-6. FastAPI runs the saved ML1 pipeline and returns the prediction result
-7. Backend validates the FastAPI response
-8. Backend persists the prediction result in Neon PostgreSQL (`predictions` table)
-9. Backend returns the prediction with storage metadata to the client
+All accounts use the same password:
 
-Predictions are now stored in the database and can be retrieved via the history endpoints.
+ArambhDemo!2026
+Role	Email
+ADMIN	admin@arambh.demo
+FACULTY	faculty@arambh.demo
+COUNSELOR	counselor@arambh.demo
+STUDENT	student@arambh.demo
+Testing the System
 
-## Configuration (backend)
+After starting all three services, test the application using the following flow.
 
-Copy `server/.env.example` to `server/.env` and set:
+Health Checks
+ML Service
+http://localhost:8000/health
+Backend
+http://localhost:5000/api/health
+Frontend
+http://localhost:5173
+Authentication Testing
 
-| Variable                | Default               | Purpose                                   |
-|-------------------------|-----------------------|-------------------------------------------|
-| `PORT`                  | `5000`                | Backend HTTP port                         |
-| `DATABASE_URL`          | —                     | Neon PostgreSQL connection string         |
-| `JWT_SECRET`            | —                     | JWT signing secret                        |
-| `JWT_EXPIRES_IN`        | `7d`                  | JWT lifetime                              |
-| `ML_SERVICE_URL`        | `http://localhost:8000` | Base URL of the FastAPI ML1 service     |
-| `ML_SERVICE_TIMEOUT_MS` | `10000`               | Timeout for ML service requests (ms)      |
+Test each role individually:
 
-## API endpoints (backend)
+Login as ADMIN
+Verify the correct dashboard and role-based access
+Logout
+Login as FACULTY
+Verify faculty access
+Logout
+Login as COUNSELOR
+Verify counselor access
+Logout
+Login as STUDENT
+Verify the student dashboard and restricted access
 
-| Method | Path                              | Access                  | Description                          |
-|--------|-----------------------------------|--------------------------|--------------------------------------|
-| POST   | `/api/auth/register`              | Public                   | Register a user                       |
-| POST   | `/api/auth/login`                 | Public                   | Login, get JWT                        |
-| GET    | `/api/students`                   | ADMIN, FACULTY, COUNSELOR | List students (paginated)          |
-| GET    | `/api/students/:id`               | ADMIN, FACULTY, COUNSELOR | Get a student                         |
-| GET    | `/api/students/:id/summary`       | ADMIN, FACULTY, COUNSELOR | Summary + latest records              |
-| GET    | `/api/students/:id/ml-features`   | ADMIN, FACULTY, COUNSELOR | Build ML1 feature payload (Phase 3)   |
-| POST   | `/api/students/:id/predict`       | ADMIN, FACULTY, COUNSELOR | Run ML1 prediction + store (Phase 7) |
-| GET    | `/api/students/:id/predictions`   | ADMIN, FACULTY, COUNSELOR | Get prediction history (Phase 7)     |
-| GET    | `/api/students/:id/predictions/latest` | ADMIN, FACULTY, COUNSELOR | Get latest prediction (Phase 7)   |
-| GET    | `/api/ml/health`                  | Public                   | Proxy check of the ML service health  |
-| GET    | `/api/health`                     | Public                   | Backend health check                  |
+The application should correctly switch between accounts without retaining stale authentication data from the previous user.
 
-## Known trade-offs (given competition timeline)
+Student Ownership Testing
 
-- Pulse AI is currently a rule-based assistant over the in-memory mock data (pattern
-  matching on the question + student names) — structured so a real LLM/RAG backend call
-  can be dropped into `buildAnswer()` in `PulseAIPanel.jsx` without changing the UI.
-- No auth flow is wired up yet (role is fixed to the mock `CURRENT_USER`); the `users`
-  table and RBAC concept are modeled in the data layer so this is straightforward to add.
-- The `ErrorState` component exists in the shared UI kit but isn't triggered anywhere live,
-  since all data is synchronous mock data with nothing that can fail — wire it up alongside
-  real API calls (a fetch `catch` block is the natural place).
-- Bundle is a single chunk (~776 KB / ~224 KB gzip) — fine for a demo; route-based
-  `React.lazy` code-splitting is a quick follow-up if needed.
+Login as a STUDENT.
 
-## Database / Data Architecture (Backend)
+Verify that the student can access their own authorized data.
 
-The Neon PostgreSQL database includes the following key tables for the ML pipeline:
+Attempting to access another student's protected data should be rejected by the backend.
 
-| Table | Purpose | Key Indexes |
-|-------|---------|-------------|
-| `students` | Core student profiles | PK on `id`, unique on `enrollment_number` |
-| `predictions` | ML1 prediction results | PK on `id`, index on `(student_id, predicted_at DESC)` |
-| `prediction_factors` | Feature-level impact scores per prediction | PK on `id`, index on `prediction_id` |
-| `assessment_records` | Student assessment data | Multiple indexes on `student_id`, `status`, `course_code` |
-| `lms_activity_records` | LMS clickstream data | Indexes on `student_id`, `activity_date`, `site_name` |
-| `attendance_records` | Attendance percentages | Index on `(student_id, recorded_at DESC)` |
-| `academic_records` | Academic performance snapshots | Index on `(student_id, recorded_at DESC)` |
+This restriction is enforced through role-based access control and student ownership validation.
 
-The `predictions` table stores the exact ML1 output: `risk_probability`, `risk_level`, `model_version`, and `predicted_at` timestamp. The existing index on `(student_id, predicted_at DESC)` makes history queries efficient.
+ML Pipeline Testing
 
----
+The complete pipeline can be tested as follows:
 
-## 🌐 Alignment with UN SDG 4
+Student Data
+→ Feature Generation
+→ ML1 Prediction
+→ Prediction Storage
+→ Prediction History
+→ ML2 Risk Analysis
+→ Alert Generation
+→ Intervention Recommendation
+→ Intervention Status Update
+→ Notification Generation
 
-> **Target 4.1 & 4.3:** Ensuring equitable, inclusive, and quality education for all.
+The system supports:
 
-By transforming reactive administration into **proactive support**, AARAMBH ASCEND™ equips schools and universities with early visibility—preventing unnecessary dropouts and keeping students on track toward graduation.
+Risk probability
+Risk levels
+Risk history
+Risk trends
+Risk velocity
+Alert generation
+Intervention recommendations
+Intervention tracking
+Notification persistence
+Production Builds
+Frontend Build
+cd "/c/Coding Projects/SIH 2026/Smart-India-Hackathon/client"
+npm run build
+Backend Build
+cd "/c/Coding Projects/SIH 2026/Smart-India-Hackathon/server"
+npm run build
+Important Notes
+The Neon PostgreSQL database is external and must be accessible through the configured DATABASE_URL.
+The backend requires a valid JWT_SECRET.
+The backend must be able to reach the ML service.
+The ML service must have access to all required model artifacts.
+The Python venv is used for local development and should not be committed to Git.
+Do not commit .env files containing real credentials.
+The frontend, backend, and ML service must all be running for the complete system to work locally.
+Security
 
----
+ARAMBH ASCEND uses:
 
-## 🔒 Responsible AI & Privacy
+JWT-based authentication
+Role-based access control
+Protected routes
+Backend authorization checks
+Student ownership restrictions
+Environment variables for secrets and credentials
 
-* **Decision Support, Not Automation:** Dropout probabilities are designed purely to guide faculty review. No automated academic actions are taken against students.
-* **Data Security:** All raw DB connections utilize SSL (`neon.tech`), parameterized SQL queries to prevent injection attacks, and strict role-based access control (RBAC).
+The valid application roles are:
 
----
+ADMIN
+FACULTY
+COUNSELOR
+STUDENT
+Current Data
+
+The system uses realistic demo data stored in Neon PostgreSQL, including:
+
+Approximately 35–45 students
+Historical student records
+Multiple data timelines
+ML predictions
+Prediction history
+Different risk levels
+High-risk students
+Alerts
+Interventions
+Notifications
+
+The historical data supports charts, reports, risk trends, and analytics.
+
+Main Functional Flow
+                    Student Data
+                         │
+                         ▼
+                  Feature Generation
+                         │
+                         ▼
+                 ML1 Risk Prediction
+                         │
+                         ▼
+                Risk Probability/Level
+                         │
+                         ▼
+                 Neon PostgreSQL Storage
+                         │
+                         ▼
+                 ML2 Risk Intelligence
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+          Risk Trend   History   Recommendations
+              │
+              ▼
+            Alerts
+              │
+              ▼
+        Interventions
+              │
+              ▼
+       Status Tracking
+              │
+              ▼
+        Notifications
+              │
+              ▼
+          Dashboards
+          Reports
+          Analytics
+License
+
+This project is developed as part of an academic and hackathon project.
+
+ARAMBH ASCEND
+
+AI-powered student risk monitoring, prediction, and intervention management system.
