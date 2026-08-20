@@ -1,16 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 import {
   dashboardQuerySchema,
-  recentActivityLimitSchema
-} from '../validators/dashboard.validator.js';
-import { studentIdParamSchema } from '../validators/student.validator.js';
+  recentActivityLimitSchema,
+} from "../validators/dashboard.validator.js";
+import { studentIdParamSchema } from "../validators/student.validator.js";
 import {
   getDashboardOverview,
   getAttentionStudents,
+  getStudentSummaries,
   getStudentDashboard,
-  getStudentSafeDashboard
-} from '../services/dashboard.service.js';
-import { StudentNotFoundError } from '../services/prediction.service.js';
+  getStudentSafeDashboard,
+} from "../services/dashboard.service.js";
+import { StudentNotFoundError } from "../services/prediction.service.js";
 
 // @desc    Global / ADMIN dashboard overview (aggregated stored data)
 // @route   GET /api/dashboard/overview
@@ -18,7 +19,7 @@ import { StudentNotFoundError } from '../services/prediction.service.js';
 export const getOverview = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   try {
     const recentLimit = recentActivityLimitSchema.parse(req.query.limit);
@@ -26,8 +27,8 @@ export const getOverview = async (
 
     res.status(200).json({
       success: true,
-      message: 'Dashboard overview fetched successfully',
-      data
+      message: "Dashboard overview fetched successfully",
+      data,
     });
   } catch (error) {
     next(error);
@@ -40,7 +41,7 @@ export const getOverview = async (
 export const getAttentionStudentsList = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   try {
     const parsedQuery = dashboardQuerySchema.parse(req.query);
@@ -50,8 +51,28 @@ export const getAttentionStudentsList = async (
 
     res.status(200).json({
       success: true,
-      message: 'Attention students fetched successfully',
-      data
+      message: "Attention students fetched successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Staff summary payload for list and analytics screens
+// @route   GET /api/dashboard/student-summaries
+// @access  Private (ADMIN, FACULTY, COUNSELOR)
+export const getStudentSummariesList = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<any> => {
+  try {
+    const summaries = await getStudentSummaries();
+    res.status(200).json({
+      success: true,
+      message: "Student summaries fetched successfully",
+      data: { summaries },
     });
   } catch (error) {
     next(error);
@@ -65,27 +86,27 @@ export const getAttentionStudentsList = async (
 export const getStudentDashboardData = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   try {
     const { id: studentId } = studentIdParamSchema.parse(req.params);
 
     // STUDENT callers get the sanitized self-view (no raw ML metrics/severity).
     const data =
-      req.user?.role === 'STUDENT'
+      req.user?.role === "STUDENT"
         ? await getStudentSafeDashboard(studentId)
         : await getStudentDashboard(studentId);
 
     res.status(200).json({
       success: true,
-      message: 'Student dashboard fetched successfully',
-      data
+      message: "Student dashboard fetched successfully",
+      data,
     });
   } catch (error) {
     if (error instanceof StudentNotFoundError) {
       return res.status(404).json({
         success: false,
-        message: 'Student not found'
+        message: "Student not found",
       });
     }
     next(error);

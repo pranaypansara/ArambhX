@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getOverview,
-  getAttentionStudentsList
-} from '../controllers/dashboard.controller.js';
-import { protect } from '../middleware/auth.middleware.js';
-import { authorize } from '../middleware/role.middleware.js';
+  getAttentionStudentsList,
+  getStudentSummariesList,
+} from "../controllers/dashboard.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
+import { authorize } from "../middleware/role.middleware.js";
 
 const router = Router();
 
@@ -12,17 +13,24 @@ const router = Router();
 // They are structured for future role-based filtering without claiming RBAC
 // beyond the existing protect + authorize middleware.
 router.get(
-  '/overview',
+  "/overview",
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
-  getOverview
+  authorize("ADMIN", "FACULTY", "COUNSELOR"),
+  getOverview,
 );
 
 router.get(
-  '/attention-students',
+  "/attention-students",
   protect,
-  authorize('ADMIN', 'FACULTY', 'COUNSELOR'),
-  getAttentionStudentsList
+  authorize("ADMIN", "FACULTY", "COUNSELOR"),
+  getAttentionStudentsList,
+);
+
+router.get(
+  "/student-summaries",
+  protect,
+  authorize("ADMIN", "FACULTY", "COUNSELOR"),
+  getStudentSummariesList,
 );
 
 export default router;

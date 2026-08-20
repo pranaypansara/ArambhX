@@ -1,8 +1,8 @@
-import StudentRepository from '../repositories/student.repository.js';
-import AlertRepository from '../repositories/alert.repository.js';
-import DashboardRepository from '../repositories/dashboard.repository.js';
-import { StudentNotFoundError } from './prediction.service.js';
-import { AlertPriority } from '../types/alert.types.js';
+import StudentRepository from "../repositories/student.repository.js";
+import AlertRepository from "../repositories/alert.repository.js";
+import DashboardRepository from "../repositories/dashboard.repository.js";
+import { StudentNotFoundError } from "./prediction.service.js";
+import { AlertPriority } from "../types/alert.types.js";
 import {
   AttentionStudent,
   AttentionStudentsData,
@@ -11,8 +11,8 @@ import {
   RiskBucket,
   StudentDashboardData,
   StudentPredictionTrend,
-  StudentSafeDashboardData
-} from '../types/dashboard.types.js';
+  StudentSafeDashboardData,
+} from "../types/dashboard.types.js";
 
 /**
  * Dashboard aggregation service (Phase 11).
@@ -29,19 +29,23 @@ import {
 /** Default size of per-student "latest interventions" list on the student dashboard. */
 const STUDENT_LATEST_INTERVENTIONS_LIMIT = 5;
 
-const VALID_RISK_LEVELS = new Set(['LOW', 'MEDIUM', 'HIGH']);
+const VALID_RISK_LEVELS = new Set(["LOW", "MEDIUM", "HIGH"]);
 
 const SEVERITY_LEVELS: Record<AlertPriority, number> = {
   LOW: 1,
   MEDIUM: 2,
   HIGH: 3,
-  CRITICAL: 4
+  CRITICAL: 4,
 };
 
 /** Map the numeric severity computed in SQL back to the alert priority string. */
-const severityLevelToPriority = (level: number | null): AlertPriority | null => {
+const severityLevelToPriority = (
+  level: number | null,
+): AlertPriority | null => {
   if (level === null || level === undefined) return null;
-  const entry = Object.entries(SEVERITY_LEVELS).find(([, rank]) => rank === level);
+  const entry = Object.entries(SEVERITY_LEVELS).find(
+    ([, rank]) => rank === level,
+  );
   return entry ? (entry[0] as AlertPriority) : null;
 };
 
@@ -49,26 +53,38 @@ const severityLevelToPriority = (level: number | null): AlertPriority | null => 
 const sanitizeRiskDistribution = (buckets: RiskBucket[]): RiskBucket[] =>
   buckets.filter((bucket) => VALID_RISK_LEVELS.has(bucket.riskLevel));
 
+/** Fetch the bounded staff summary payload in one database round trip. */
+export const getStudentSummaries = async (): Promise<
+  Array<Record<string, unknown>>
+> => DashboardRepository.getStudentSummaries();
+
 /** Fetch the ADMIN/global overview dashboard data. */
-export const getDashboardOverview = async (recentLimit: number): Promise<DashboardOverviewData> => {
+export const getDashboardOverview = async (
+  recentLimit: number,
+): Promise<DashboardOverviewData> => {
   const totalStudents = await StudentRepository.countAll();
-  const studentsWithPredictions = await DashboardRepository.countStudentsWithPredictions();
-  const riskDistribution = sanitizeRiskDistribution(await DashboardRepository.getRiskDistribution());
+  const studentsWithPredictions =
+    await DashboardRepository.countStudentsWithPredictions();
+  const riskDistribution = sanitizeRiskDistribution(
+    await DashboardRepository.getRiskDistribution(),
+  );
   const alerts = await DashboardRepository.getAlertOverviewStats();
-  const interventions = await DashboardRepository.getInterventionOverviewStats();
+  const interventions =
+    await DashboardRepository.getInterventionOverviewStats();
 
   const recentLimitSafe = Math.min(Math.max(1, recentLimit), 50);
-  const [recentPredictions, recentAlerts, recentInterventions] = await Promise.all([
-    DashboardRepository.getRecentPredictions(recentLimitSafe),
-    DashboardRepository.getRecentAlerts(recentLimitSafe),
-    DashboardRepository.getRecentInterventions(recentLimitSafe)
-  ]);
+  const [recentPredictions, recentAlerts, recentInterventions] =
+    await Promise.all([
+      DashboardRepository.getRecentPredictions(recentLimitSafe),
+      DashboardRepository.getRecentAlerts(recentLimitSafe),
+      DashboardRepository.getRecentInterventions(recentLimitSafe),
+    ]);
 
   return {
     students: {
       total: totalStudents,
       withPredictions: studentsWithPredictions,
-      withoutPredictions: Math.max(0, totalStudents - studentsWithPredictions)
+      withoutPredictions: Math.max(0, totalStudents - studentsWithPredictions),
     },
     riskDistribution,
     alerts,
@@ -76,52 +92,64 @@ export const getDashboardOverview = async (recentLimit: number): Promise<Dashboa
     recentActivity: {
       predictions: recentPredictions,
       alerts: recentAlerts,
-      interventions: recentInterventions
-    }
+      interventions: recentInterventions,
+    },
   };
 };
 
 /** Fetch the list of students currently requiring attention. */
-export const getAttentionStudents = async (limit: number): Promise<AttentionStudentsData> => {
+export const getAttentionStudents = async (
+  limit: number,
+): Promise<AttentionStudentsData> => {
   const safeLimit = Math.min(Math.max(1, limit), 100);
   const rows = await DashboardRepository.getAttentionStudents(safeLimit);
 
   const attentionStudents: AttentionStudent[] = rows.map((row) => ({
     ...row,
-    latestRiskLevel: VALID_RISK_LEVELS.has(row.latestRiskLevel ?? '')
-      ? (row.latestRiskLevel as AttentionStudent['latestRiskLevel'])
+    latestRiskLevel: VALID_RISK_LEVELS.has(row.latestRiskLevel ?? "")
+      ? (row.latestRiskLevel as AttentionStudent["latestRiskLevel"])
       : null,
-    highestAlertSeverity: severityLevelToPriority(row.highestAlertSeverity as number | null)
+    highestAlertSeverity: severityLevelToPriority(
+      row.highestAlertSeverity as number | null,
+    ),
   }));
 
   return { attentionStudents };
 };
 
 /** Fetch aggregated dashboard data for a single student. */
-export const getStudentDashboard = async (studentId: number): Promise<StudentDashboardData> => {
+export const getStudentDashboard = async (
+  studentId: number,
+): Promise<StudentDashboardData> => {
   const student = await StudentRepository.findById(studentId);
   if (!student) {
     return Promise.reject(new StudentNotFoundError(studentId));
   }
 
-  const [predictionTrend, activeAlerts, interventionSummary, latestInterventions] =
-    await Promise.all([
-      DashboardRepository.getStudentPredictionTrend(studentId),
-      AlertRepository.findOpenByStudentId(studentId),
-      DashboardRepository.getStudentInterventionSummary(studentId),
-      DashboardRepository.getRecentInterventionsForStudent(
-        studentId,
-        STUDENT_LATEST_INTERVENTIONS_LIMIT
-      )
-    ]);
+  const [
+    predictionTrend,
+    activeAlerts,
+    interventionSummary,
+    latestInterventions,
+  ] = await Promise.all([
+    DashboardRepository.getStudentPredictionTrend(studentId),
+    AlertRepository.findOpenByStudentId(studentId),
+    DashboardRepository.getStudentInterventionSummary(studentId),
+    DashboardRepository.getRecentInterventionsForStudent(
+      studentId,
+      STUDENT_LATEST_INTERVENTIONS_LIMIT,
+    ),
+  ]);
 
   const trend: StudentPredictionTrend = {
     totalPredictions: predictionTrend.totalPredictions,
     latestRiskProbability: predictionTrend.latestRiskProbability,
-    latestRiskLevel: VALID_RISK_LEVELS.has(predictionTrend.latestRiskLevel ?? '')
-      ? (predictionTrend.latestRiskLevel as StudentPredictionTrend['latestRiskLevel'])
+    latestRiskLevel: VALID_RISK_LEVELS.has(
+      predictionTrend.latestRiskLevel ?? "",
+    )
+      ? (predictionTrend.latestRiskLevel as StudentPredictionTrend["latestRiskLevel"])
       : null,
-    latestPredictedAt: predictionTrend.latestPredictedAt
+    latestPredictedAt: predictionTrend.latestPredictedAt,
   };
 
   return {
@@ -130,14 +158,14 @@ export const getStudentDashboard = async (studentId: number): Promise<StudentDas
       name: student.name,
       enrollmentNumber: student.enrollmentNumber,
       department: student.department,
-      semester: student.semester
+      semester: student.semester,
     },
     predictions: trend,
     alerts: {
-      active: activeAlerts
+      active: activeAlerts,
     },
     interventions: interventionSummary,
-    latestInterventions: latestInterventions as RecentIntervention[]
+    latestInterventions: latestInterventions as RecentIntervention[],
   };
 };
 
@@ -148,21 +176,22 @@ export const getStudentDashboard = async (studentId: number): Promise<StudentDas
  * alert count, and their actionable support plan.
  */
 export const getStudentSafeDashboard = async (
-  studentId: number
+  studentId: number,
 ): Promise<StudentSafeDashboardData> => {
   const student = await StudentRepository.findById(studentId);
   if (!student) {
     return Promise.reject(new StudentNotFoundError(studentId));
   }
 
-  const [activeAlerts, interventionSummary, latestInterventions] = await Promise.all([
-    AlertRepository.findOpenByStudentId(studentId),
-    DashboardRepository.getStudentInterventionSummary(studentId),
-    DashboardRepository.getRecentInterventionsForStudent(
-      studentId,
-      STUDENT_LATEST_INTERVENTIONS_LIMIT
-    )
-  ]);
+  const [activeAlerts, interventionSummary, latestInterventions] =
+    await Promise.all([
+      AlertRepository.findOpenByStudentId(studentId),
+      DashboardRepository.getStudentInterventionSummary(studentId),
+      DashboardRepository.getRecentInterventionsForStudent(
+        studentId,
+        STUDENT_LATEST_INTERVENTIONS_LIMIT,
+      ),
+    ]);
 
   return {
     student: {
@@ -170,17 +199,19 @@ export const getStudentSafeDashboard = async (
       name: student.name,
       enrollmentNumber: student.enrollmentNumber,
       department: student.department,
-      semester: student.semester
+      semester: student.semester,
     },
     alerts: {
-      activeCount: activeAlerts.length
+      activeCount: activeAlerts.length,
     },
     interventions: interventionSummary,
-    latestInterventions: (latestInterventions as RecentIntervention[]).map((intervention) => ({
-      id: intervention.id,
-      type: intervention.type,
-      status: intervention.status,
-      createdAt: intervention.createdAt
-    }))
+    latestInterventions: (latestInterventions as RecentIntervention[]).map(
+      (intervention) => ({
+        id: intervention.id,
+        type: intervention.type,
+        status: intervention.status,
+        createdAt: intervention.createdAt,
+      }),
+    ),
   };
 };

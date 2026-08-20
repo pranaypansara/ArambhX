@@ -1,11 +1,11 @@
-import pool from '../config/db.js';
-import { StoredAlert } from '../types/alert.types.js';
+import pool from "../config/db.js";
+import { StoredAlert } from "../types/alert.types.js";
 import {
   AttentionStudent,
   RiskBucket,
   RecentIntervention,
-  RecentPrediction
-} from '../types/dashboard.types.js';
+  RecentPrediction,
+} from "../types/dashboard.types.js";
 
 /**
  * Dashboard aggregation repository (Phase 11).
@@ -20,11 +20,98 @@ import {
  * No schema changes and no new indexes are required by these queries.
  */
 class DashboardRepository {
+  /**
+   * Fetch the bounded summary payload used by staff list/analytics screens.
+   * Keeping the related collections in one query removes the frontend N+1
+   * pattern while preserving the existing per-student endpoint contracts.
+   */
+  async getStudentSummaries(): Promise<Array<Record<string, unknown>>> {
+    const query = {
+      text: `
+        SELECT
+          s.id,
+          s.enrollment_number AS "enrollmentNumber",
+          s.name,
+          s.email,
+          s.department,
+          s.semester,
+          s.created_at AS "createdAt",
+          s.updated_at AS "updatedAt",
+          COALESCE((
+            SELECT json_agg(p.item ORDER BY p.item->>'predictedAt' ASC)
+            FROM (
+              SELECT json_build_object(
+                'id', p.id,
+                'studentId', p.student_id,
+                'riskProbability', p.risk_probability::float8,
+                'riskLevel', p.risk_level,
+                'modelVersion', p.model_version,
+                'predictedAt', p.predicted_at
+              ) AS item
+              FROM predictions p
+              WHERE p.student_id = s.id
+              ORDER BY p.predicted_at DESC, p.id DESC
+              LIMIT 12
+            ) p
+          ), '[]'::json) AS predictions,
+          COALESCE((
+            SELECT json_agg(a.item ORDER BY a.item->>'createdAt' ASC)
+            FROM (
+              SELECT json_build_object(
+                'id', a.id,
+                'studentId', a.student_id,
+                'studentName', s.name,
+                'predictionId', a.prediction_id,
+                'alertType', a.alert_type,
+                'priority', a.priority,
+                'message', a.message,
+                'status', a.status,
+                'createdAt', a.created_at,
+                'resolvedAt', a.resolved_at
+              ) AS item
+              FROM alerts a
+              WHERE a.student_id = s.id
+              ORDER BY a.created_at DESC, a.id DESC
+              LIMIT 30
+            ) a
+          ), '[]'::json) AS alerts,
+          COALESCE((
+            SELECT json_agg(i.item ORDER BY i.item->>'createdAt' ASC)
+            FROM (
+              SELECT json_build_object(
+                'id', i.id,
+                'studentId', i.student_id,
+                'studentName', s.name,
+                'type', i.type,
+                'reason', i.reason,
+                'priority', i.priority,
+                'status', i.status,
+                'assignedTo', i.assigned_to,
+                'deadline', i.deadline,
+                'notes', i.notes,
+                'createdAt', i.created_at,
+                'updatedAt', i.updated_at
+              ) AS item
+              FROM interventions i
+              WHERE i.student_id = s.id
+              ORDER BY i.created_at DESC, i.id DESC
+              LIMIT 30
+            ) i
+          ), '[]'::json) AS interventions
+        FROM students s
+        ORDER BY s.enrollment_number ASC
+      `,
+      values: [],
+    };
+    const { rows } = await pool.query(query);
+    return rows as Array<Record<string, unknown>>;
+  }
+
   /** Number of students that have at least one stored prediction. */
   async countStudentsWithPredictions(): Promise<number> {
     const query = {
-      text: 'SELECT COUNT(DISTINCT student_id)::int AS count FROM predictions',
-      values: []
+      text: "SELECT COUNT(DISTINCT student_id)::int AS count FROM predictions",
+      values: [],
     };
     const { rows } = await pool.query(query);
     return rows[0].count;
@@ -45,7 +132,7 @@ class DashboardRepository {
         ) latest
         GROUP BY latest.risk_level
       `,
-      values: []
+      values: [],
     };
     const { rows } = await pool.query(query);
     return rows as RiskBucket[];
@@ -67,7 +154,7 @@ class DashboardRepository {
           COUNT(*) FILTER (WHERE status = 'RESOLVED')::int AS "resolved"
         FROM alerts
       `,
-      values: []
+      values: [],
     };
     const { rows } = await pool.query(query);
     const row = rows[0];
@@ -77,8 +164,8 @@ class DashboardRepository {
       byStatus: {
         ACTIVE: row.activeStatus,
         ACKNOWLEDGED: row.acknowledged,
-        RESOLVED: row.resolved
-      }
+        RESOLVED: row.resolved,
+      },
     };
   }
 
@@ -102,7 +189,7 @@ class DashboardRepository {
           COUNT(*) FILTER (WHERE status = 'ESCALATED')::int AS "escalated"
         FROM interventions
       `,
-      values: []
+      values: [],
     };
     const { rows } = await pool.query(query);
     const row = rows[0];
@@ -116,8 +203,8 @@ class DashboardRepository {
         COMPLETED: row.completed,
         EVALUATED: row.evaluated,
         CLOSED: row.closed,
-        ESCALATED: row.escalated
-      }
+        ESCALATED: row.escalated,
+      },
     };
   }
 
@@ -138,7 +225,7 @@ class DashboardRepository {
         ORDER BY p.predicted_at DESC, p.id DESC
         LIMIT $1
       `,
-      values: [limit]
+      values: [limit],
     };
     const { rows } = await pool.query(query);
     return rows as RecentPrediction[];
@@ -164,7 +251,7 @@ class DashboardRepository {
         ORDER BY a.created_at DESC, a.id DESC
         LIMIT $1
       `,
-      values: [limit]
+      values: [limit],
     };
     const { rows } = await pool.query(query);
     return rows as StoredAlert[];
@@ -188,7 +275,7 @@ class DashboardRepository {
         ORDER BY i.created_at DESC, i.id DESC
         LIMIT $1
       `,
-      values: [limit]
+      values: [limit],
     };
     const { rows } = await pool.query(query);
     return rows as RecentIntervention[];
@@ -254,7 +341,7 @@ class DashboardRepository {
                  s.id ASC
         LIMIT $1
       `,
-      values: [limit]
+      values: [limit],
     };
     const { rows } = await pool.query(query);
     return rows as AttentionStudent[];
@@ -278,7 +365,7 @@ class DashboardRepository {
           (SELECT risk_level FROM predictions WHERE student_id = $1 ORDER BY predicted_at DESC, id DESC LIMIT 1) AS "latestRiskLevel",
           (SELECT predicted_at FROM predictions WHERE student_id = $1 ORDER BY predicted_at DESC, id DESC LIMIT 1) AS "latestPredictedAt"
       `,
-      values: [studentId]
+      values: [studentId],
     };
     const { rows } = await pool.query(query);
     const row = rows[0];
@@ -286,7 +373,7 @@ class DashboardRepository {
       totalPredictions: row.totalPredictions,
       latestRiskProbability: row.latestRiskProbability,
       latestRiskLevel: row.latestRiskLevel,
-      latestPredictedAt: row.latestPredictedAt
+      latestPredictedAt: row.latestPredictedAt,
     };
   }
 
@@ -311,7 +398,7 @@ class DashboardRepository {
         FROM interventions
         WHERE student_id = $1
       `,
-      values: [studentId]
+      values: [studentId],
     };
     const { rows } = await pool.query(query);
     const row = rows[0];
@@ -325,15 +412,15 @@ class DashboardRepository {
         COMPLETED: row.completed,
         EVALUATED: row.evaluated,
         CLOSED: row.closed,
-        ESCALATED: row.escalated
-      }
+        ESCALATED: row.escalated,
+      },
     };
   }
 
   /** Recent interventions for one student (newest first, limited). */
   async getRecentInterventionsForStudent(
     studentId: number,
-    limit: number
+    limit: number,
   ): Promise<RecentIntervention[]> {
     const query = {
       text: `
@@ -352,7 +439,7 @@ class DashboardRepository {
         ORDER BY i.created_at DESC, i.id DESC
         LIMIT $2
       `,
-      values: [studentId, limit]
+      values: [studentId, limit],
     };
     const { rows } = await pool.query(query);
     return rows as RecentIntervention[];
