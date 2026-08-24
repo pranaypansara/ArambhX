@@ -134,14 +134,14 @@ export default function AuthPage() {
   };
 
   const inputClass = (valid) =>
-    `w-full bg-[#F8FAF9] border text-[#153A5B] rounded-xl px-3.5 py-2.5 font-bold focus:outline-none focus:ring-2 ${
+    `w-full bg-void border text-ink rounded-xl px-3.5 py-2.5 font-bold focus:outline-none focus:ring-2 ${
       valid === false
-        ? "border-[#C84C4C] focus:ring-[#C84C4C]"
-        : "border-[#D9E8E7] focus:ring-[#2A8588]"
+        ? "border-coral-dim focus:ring-coral-dim"
+        : "border-hairline focus:ring-teal"
     }`;
 
   return (
-    <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 text-[#153A5B]">
+    <div className="min-h-screen bg-void flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 text-ink">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2 mb-6">
         <div className="inline-flex items-center justify-center mb-1">
           <img
@@ -151,25 +151,25 @@ export default function AuthPage() {
           />
         </div>
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-[#153A5B] tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-black text-ink tracking-tight">
             ArambhX
           </h1>
-          <p className="text-xs font-mono font-bold text-[#2A8588] tracking-wider uppercase mt-0.5">
+          <p className="text-xs font-mono font-bold text-teal tracking-wider uppercase mt-0.5">
             Student Dropout & Intervention System
           </p>
         </div>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-xl">
-        <div className="bg-white border border-[#D9E8E7] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-          <div className="bg-[#EDF7F8] p-1.5 rounded-2xl border border-[#D9E8E7] flex items-center gap-1.5">
+        <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+          <div className="bg-panel-alt p-1.5 rounded-2xl border border-hairline flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setActiveTab("login")}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all text-center ${
                 activeTab === "login"
-                  ? "bg-[#D7EEEE] text-[#153A5B] shadow-sm border border-[#C4E2E2]"
-                  : "text-[#607580] hover:text-[#153A5B]"
+                  ? "bg-[var(--color-panel-active)] text-ink shadow-sm border border-[var(--color-panel-active-border)]"
+                  : "text-slate-500 hover:text-ink"
               }`}
             >
               Log In
@@ -179,8 +179,8 @@ export default function AuthPage() {
               onClick={() => setActiveTab("register")}
               className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all text-center ${
                 activeTab === "register"
-                  ? "bg-[#D7EEEE] text-[#153A5B] shadow-sm border border-[#C4E2E2]"
-                  : "text-[#607580] hover:text-[#153A5B]"
+                  ? "bg-[var(--color-panel-active)] text-ink shadow-sm border border-[var(--color-panel-active-border)]"
+                  : "text-slate-500 hover:text-ink"
               }`}
             >
               Register
@@ -190,11 +190,11 @@ export default function AuthPage() {
           {activeTab === "login" && (
             <form
               onSubmit={handleLoginSubmit}
-              className="space-y-5 text-xs text-[#153A5B]"
+              className="space-y-5 text-xs text-ink"
             >
               <div>
-                <label className="block text-[#153A5B] font-bold mb-1.5">
-                  Email Address: <span className="text-[#C84C4C]">*</span>
+                <label className="block text-ink font-bold mb-1.5">
+                  Email Address: <span className="text-coral-dim">*</span>
                 </label>
                 <input
                   type="email"
@@ -207,8 +207,8 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-[#153A5B] font-bold mb-1.5">
-                  Password: <span className="text-[#C84C4C]">*</span>
+                <label className="block text-ink font-bold mb-1.5">
+                  Password: <span className="text-coral-dim">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -222,7 +222,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580] hover:text-[#153A5B]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-ink"
                   >
                     {showLoginPassword ? (
                       <EyeOff size={16} />
@@ -238,20 +238,20 @@ export default function AuthPage() {
                 disabled={submitting}
                 className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2 ${
                   submitting
-                    ? "bg-[#607580]/50 cursor-wait"
-                    : "bg-[#2A8588] hover:bg-[#216B6D] shadow-[#2A8588]/20"
+                    ? "bg-slate-500/50 cursor-wait"
+                    : "bg-teal hover:bg-[var(--color-teal-dim)] shadow-teal/20"
                 }`}
               >
                 <Lock size={16} />
                 <span>{submitting ? "Signing in…" : "Log In"}</span>
               </button>
 
-              <p className="text-center text-[11px] text-[#607580] font-medium">
+              <p className="text-center text-[11px] text-slate-500 font-medium">
                 New here?{" "}
                 <button
                   type="button"
                   onClick={() => setActiveTab("register")}
-                  className="font-extrabold text-[#2A8588] hover:underline inline-flex items-center gap-1"
+                  className="font-extrabold text-teal hover:underline inline-flex items-center gap-1"
                 >
                   Register an account <ArrowRight size={12} />
                 </button>
@@ -262,11 +262,11 @@ export default function AuthPage() {
           {activeTab === "register" && (
             <form
               onSubmit={handleRegisterSubmit}
-              className="space-y-4 text-xs text-[#153A5B]"
+              className="space-y-4 text-xs text-ink"
             >
               <div>
-                <label className="block text-[#153A5B] font-bold mb-2">
-                  Register as: <span className="text-[#C84C4C]">*</span>
+                <label className="block text-ink font-bold mb-2">
+                  Register as: <span className="text-coral-dim">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {PUBLIC_ROLES.map((r) => (
@@ -276,32 +276,32 @@ export default function AuthPage() {
                       onClick={() => setRegRole(r.role)}
                       className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all text-center ${
                         regRole === r.role
-                          ? "bg-[#D7EEEE] border-[#2A8588] shadow-sm"
-                          : "bg-white border-[#D9E8E7] hover:border-[#2A8588]"
+                          ? "bg-[var(--color-panel-active)] border-teal shadow-sm"
+                          : "bg-white border-hairline hover:border-teal"
                       }`}
                     >
-                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#EDF7F8] text-[#2A8588] mb-2">
-                        <r.icon size={20} className="text-[#2A8588]" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-panel-alt text-teal mb-2">
+                        <r.icon size={20} className="text-teal" />
                       </div>
-                      <span className="font-extrabold text-[#153A5B]">
+                      <span className="font-extrabold text-ink">
                         {r.label}
                       </span>
-                      <p className="text-[10px] text-[#607580] text-center">
+                      <p className="text-[10px] text-slate-500 text-center">
                         {r.description}
                       </p>
                     </button>
                   ))}
                 </div>
                 {!regRole && (
-                  <p className="text-[11px] text-[#C84C4C] text-center mt-1">
+                  <p className="text-[11px] text-coral-dim text-center mt-1">
                     Please select a role to continue
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-[#153A5B] font-bold mb-1">
-                  Full Name: <span className="text-[#C84C4C]">*</span>
+                <label className="block text-ink font-bold mb-1">
+                  Full Name: <span className="text-coral-dim">*</span>
                 </label>
                 <input
                   type="text"
@@ -314,8 +314,8 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-[#153A5B] font-bold mb-1">
-                  Email Address: <span className="text-[#C84C4C]">*</span>
+                <label className="block text-ink font-bold mb-1">
+                  Email Address: <span className="text-coral-dim">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -328,15 +328,15 @@ export default function AuthPage() {
                   />
                   <Mail
                     size={15}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
                   />
                 </div>
               </div>
 
               {regRole === "STUDENT" && (
                 <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Student ID: <span className="text-[#C84C4C]">*</span>
+                  <label className="block text-ink font-bold mb-1">
+                    Student ID: <span className="text-coral-dim">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -350,10 +350,10 @@ export default function AuthPage() {
                     />
                     <IdCard
                       size={15}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#607580]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
                     />
                   </div>
-                  <p className="mt-1 text-[11px] text-[#C84C4C]">
+                  <p className="mt-1 text-[11px] text-coral-dim">
                     Student ID is required for Student registration. It must
                     reference a valid existing student.
                   </p>
@@ -362,8 +362,8 @@ export default function AuthPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Password: <span className="text-[#C84C4C]">*</span>
+                  <label className="block text-ink font-bold mb-1">
+                    Password: <span className="text-coral-dim">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -377,7 +377,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#607580] hover:text-[#153A5B]"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-ink"
                     >
                       {showRegPassword ? (
                         <EyeOff size={15} />
@@ -389,8 +389,8 @@ export default function AuthPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[#153A5B] font-bold mb-1">
-                    Confirm Password: <span className="text-[#C84C4C]">*</span>
+                  <label className="block text-ink font-bold mb-1">
+                    Confirm Password: <span className="text-coral-dim">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -404,7 +404,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#607580] hover:text-[#153A5B]"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-ink"
                     >
                       {showRegPassword ? (
                         <EyeOff size={15} />
@@ -427,8 +427,8 @@ export default function AuthPage() {
                         </>
                       ) : (
                         <>
-                          <AlertCircle size={12} className="text-[#C84C4C]" />
-                          <span className="text-[#C84C4C]">
+                          <AlertCircle size={12} className="text-coral-dim" />
+                          <span className="text-coral-dim">
                             Passwords do not match
                           </span>
                         </>
@@ -438,8 +438,8 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <div className="bg-[#EDF7F8] border border-[#D9E8E7] p-3.5 rounded-2xl space-y-2">
-                <span className="text-xs font-extrabold text-[#153A5B] block">
+              <div className="bg-panel-alt border border-hairline p-3.5 rounded-2xl space-y-2">
+                <span className="text-xs font-extrabold text-ink block">
                   Password must contain:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -461,8 +461,8 @@ export default function AuthPage() {
                 disabled={submitting || !isPasswordValid || !isConfirmMatch}
                 className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2 ${
                   submitting || !isPasswordValid || !isConfirmMatch
-                    ? "bg-[#607580]/40 cursor-not-allowed"
-                    : "bg-[#2A8588] hover:bg-[#216B6D] shadow-[#2A8588]/20"
+                    ? "bg-slate-500/40 cursor-not-allowed"
+                    : "bg-teal hover:bg-[var(--color-teal-dim)] shadow-teal/20"
                 }`}
               >
                 <UserCheck size={16} />
@@ -481,12 +481,12 @@ export default function AuthPage() {
 function Requirement({ ok, text }) {
   return (
     <div
-      className={`flex items-center gap-1.5 font-medium transition-colors ${ok ? "text-[#3A8F6A] font-bold" : "text-[#607580]"}`}
+      className={`flex items-center gap-1.5 font-medium transition-colors ${ok ? "text-[#3A8F6A] font-bold" : "text-slate-500"}`}
     >
       {ok ? (
         <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
       ) : (
-        <CircleDot size={10} className="text-[#607580] shrink-0" />
+        <CircleDot size={10} className="text-slate-500 shrink-0" />
       )}
       <span>{text}</span>
     </div>

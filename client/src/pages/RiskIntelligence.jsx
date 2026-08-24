@@ -86,7 +86,7 @@ export default function RiskIntelligence() {
                 <button
                   key={s.student?.id}
                   onClick={() => navigate(`/students/${s.student?.id}`)}
-                  className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-[#F8FAF9] rounded-lg"
+                  className="w-full flex items-center gap-3 py-3 px-1 text-left hover:bg-void rounded-lg"
                 >
                   <span className="w-5 text-center font-mono text-xs text-slate-400">{i + 1}</span>
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: `${vColor}1f`, color: vColor }}>

@@ -20,15 +20,15 @@ function greeting() {
 
 function AttentionFeedItem({ item, navigate }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-[#D9E8E7] last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-hairline last:border-0">
       <span className="mt-1.5 w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#153A5B]">{item.text}</p>
-        <p className="text-[11px] text-[#607580] mt-0.5">{item.when}</p>
+        <p className="text-sm font-semibold text-ink">{item.text}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{item.when}</p>
       </div>
       <button
         onClick={() => navigate(item.to)}
-        className="text-xs border border-[#D9E8E7] bg-[#FFFFFF] hover:bg-[#EDF7F8] px-3 py-1.5 rounded-full text-[#2A8588] font-bold shrink-0 flex items-center gap-1 shadow-sm transition"
+        className="text-xs border border-hairline bg-panel hover:bg-panel-alt px-3 py-1.5 rounded-full text-teal font-bold shrink-0 flex items-center gap-1 shadow-sm transition"
       >
         {item.actionLabel} <ArrowRight size={11} />
       </button>
@@ -103,23 +103,23 @@ export default function Overview() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#EDF7F8] border border-[#D9E8E7] rounded-3xl p-6 shadow-sm">
+      <div className="bg-panel-alt border border-hairline rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#2A8588] font-mono mb-1">
+            <div className="text-[11px] font-extrabold uppercase tracking-wider text-teal font-mono mb-1">
               Faculty Command Center
             </div>
-            <h1 className="font-display text-3xl font-black text-[#153A5B] tracking-tight">
+            <h1 className="font-display text-3xl font-black text-ink tracking-tight">
               {greeting()}, {(user?.name || 'Faculty').split(' ').slice(0, 2).join(' ')}
             </h1>
-            <p className="text-sm text-[#607580] font-medium mt-1">
+            <p className="text-sm text-slate-500 font-medium mt-1">
               Here's what needs your attention today across all monitored academic tracks.
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFFFF] border border-[#D9E8E7] text-xs font-bold text-[#153A5B] shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-[#2A8588]" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel border border-hairline text-xs font-bold text-ink shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-teal" />
               <span>AI Models Active</span>
             </span>
           </div>
@@ -169,9 +169,9 @@ export default function Overview() {
                 title="Smart Attention Feed"
                 subtitle="What changed since your last visit"
               >
-                <div className="divide-y divide-[#D9E8E7]">
+                <div className="divide-y divide-hairline">
                   {feed.length === 0 ? (
-                    <p className="text-xs text-[#607580] py-3">Nothing urgent to surface right now.</p>
+                    <p className="text-xs text-slate-500 py-3">Nothing urgent to surface right now.</p>
                   ) : (
                     feed.map((item, i) => (
                       <AttentionFeedItem key={i} item={item} navigate={navigate} />

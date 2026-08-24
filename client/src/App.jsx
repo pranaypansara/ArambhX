@@ -55,7 +55,7 @@ export default function App() {
             </Route>
 
             <Route path="/student-view" element={<ProtectedRoute />}>
-              <Route element={<StudentDashboard />} />
+              <Route index element={<StudentDashboard />} />
             </Route>
 
             <Route path="*" element={<RoleRedirect />} />

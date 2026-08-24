@@ -18,15 +18,21 @@ export default function Topbar({ onOpenMobile }) {
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState([]);
   const [unread, setUnread] = useState(0);
-  const [highContrast, setHighContrast] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = window.localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  });
   const navigate = useNavigate();
   const boxRef = useRef(null);
   const { user, role, isStaff, logout } = useAuth();
   const toast = useToast();
 
   useEffect(() => {
-    document.documentElement.classList.toggle('theme-contrast', highContrast);
-  }, [highContrast]);
+    document.documentElement.classList.toggle('dark', isDark);
+    window.localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   const loadUnread = () => {
     api.getUnreadCount()
@@ -78,35 +84,35 @@ export default function Topbar({ onOpenMobile }) {
   const displayRole = user ? (ROLE_LABELS[role] || role) : 'Guest';
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-[#D9E8E7] bg-[#EDF7F8]/95 backdrop-blur px-4 lg:px-6 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 h-16 border-b border-hairline bg-panel-alt/95 backdrop-blur px-4 lg:px-6 flex items-center justify-between gap-4">
 
       <div className="flex items-center gap-3 flex-1 max-w-md">
-        <button className="lg:hidden text-[#153A5B]" onClick={onOpenMobile}>
+        <button className="lg:hidden text-ink" onClick={onOpenMobile}>
           <Menu size={20} />
         </button>
 
         {isStaff && (
           <div className="relative flex-1" ref={boxRef}>
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2A8588]" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-teal" />
             <input
               value={query}
               onChange={(e) => { setQuery(e.target.value); setShowResults(true); }}
               onFocus={() => setShowResults(true)}
               placeholder="Search students by name or enrollment no."
-              className="w-full bg-[#FFFFFF] border border-[#D9E8E7] rounded-xl pl-9 pr-3 py-2 text-sm text-[#153A5B] placeholder:text-[#607580] focus:border-[#2A8588] outline-none transition-colors shadow-sm font-medium"
+              className="w-full bg-panel border border-hairline rounded-xl pl-9 pr-3 py-2 text-sm text-ink placeholder:text-slate-500 focus:border-teal outline-none transition-colors shadow-sm font-medium"
             />
             {showResults && results.length > 0 && (
-              <div className="absolute top-full mt-2 left-0 right-0 bg-[#FFFFFF] border border-[#D9E8E7] rounded-xl shadow-xl overflow-hidden count-up z-50">
+              <div className="absolute top-full mt-2 left-0 right-0 bg-panel border border-hairline rounded-xl shadow-xl overflow-hidden count-up z-50">
                 {results.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => { navigate(`/students/${s.id}`); setShowResults(false); setQuery(''); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#EDF7F8] text-left border-b border-[#D9E8E7] last:border-0"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-panel-alt text-left border-b border-hairline last:border-0"
                   >
                     <StudentAvatar name={s.name} size={28} />
                     <div className="min-w-0">
-                      <div className="text-sm font-bold text-[#153A5B] truncate">{s.name}</div>
-                      <div className="text-[11px] text-[#607580] font-mono">{s.enrollmentNumber} · {s.department}</div>
+                      <div className="text-sm font-bold text-ink truncate">{s.name}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">{s.enrollmentNumber} · {s.department}</div>
                     </div>
                   </button>
                 ))}
@@ -117,50 +123,50 @@ export default function Topbar({ onOpenMobile }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#153A5B] font-mono font-bold px-3 py-1.5 rounded-xl border border-[#D9E8E7] bg-[#FFFFFF]">
-          <CalendarDays size={13} className="text-[#2A8588]" />
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-ink font-mono font-bold px-3 py-1.5 rounded-xl border border-hairline bg-panel">
+          <CalendarDays size={13} className="text-teal" />
           Odd Semester · 2026-27
         </div>
 
         <button
-          onClick={() => setHighContrast(v => !v)}
-          title={highContrast ? 'Switch to standard contrast' : 'Switch to high contrast'}
-          className="w-9 h-9 flex items-center justify-center rounded-xl text-[#153A5B] hover:bg-[#FFFFFF] border border-transparent hover:border-[#D9E8E7] shrink-0 transition"
+          onClick={() => setIsDark(v => !v)}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-ink hover:bg-panel border border-transparent hover:border-hairline shrink-0 transition"
         >
-          {highContrast ? <Sun size={17} /> : <Moon size={17} />}
+          {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
         <button
           onClick={() => navigate('/settings')}
           title="Settings"
-          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl text-[#153A5B] hover:bg-[#FFFFFF] border border-transparent hover:border-[#D9E8E7] shrink-0 transition"
+          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl text-ink hover:bg-panel border border-transparent hover:border-hairline shrink-0 transition"
         >
           <SettingsIcon size={17} />
         </button>
 
         <button
           onClick={() => navigate('/notifications')}
-          className="relative w-9 h-9 flex items-center justify-center rounded-xl text-[#153A5B] hover:bg-[#FFFFFF] border border-transparent hover:border-[#D9E8E7] shrink-0 transition"
+          className="relative w-9 h-9 flex items-center justify-center rounded-xl text-ink hover:bg-panel border border-transparent hover:border-hairline shrink-0 transition"
         >
           <Bell size={17} />
           {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-[#C84C4C] text-white text-[9px] font-black flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-coral-dim text-white text-[9px] font-black flex items-center justify-center">
               {unread > 9 ? '9+' : unread}
             </span>
           )}
         </button>
 
-        <div className="flex items-center gap-2 pl-3 border-l border-[#D9E8E7] shrink-0 bg-[#FFFFFF] px-3 py-1 rounded-xl shadow-sm border border-[#D9E8E7]">
+        <div className="flex items-center gap-2 pl-3 border-l border-hairline shrink-0 bg-panel px-3 py-1 rounded-xl shadow-sm border border-hairline">
           <StudentAvatar name={displayName} size={30} ring="#2A8588" />
           <div className="leading-tight">
-            <div className="text-xs font-black text-[#153A5B] whitespace-nowrap">{displayName}</div>
-            <div className="text-[10px] text-[#2A8588] font-extrabold uppercase">{displayRole}</div>
+            <div className="text-xs font-black text-ink whitespace-nowrap">{displayName}</div>
+            <div className="text-[10px] text-teal font-extrabold uppercase">{displayRole}</div>
           </div>
 
           <button
             onClick={handleLogout}
             title="Log out"
-            className="ml-1 p-1 rounded-lg hover:bg-[#C84C4C]/15 text-[#C84C4C] transition"
+            className="ml-1 p-1 rounded-lg hover:bg-coral-dim/15 text-coral-dim transition"
           >
             <LogOut size={15} />
           </button>

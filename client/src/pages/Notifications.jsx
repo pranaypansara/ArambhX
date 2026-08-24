@@ -101,7 +101,7 @@ export default function Notifications() {
                       <button
                         key={n.id}
                         onClick={() => open(n)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${n.isRead ? 'hover:bg-[#EDF7F8]' : 'bg-[#EDF7F8] hover:bg-[#E3F2F2]'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${n.isRead ? 'hover:bg-panel-alt' : 'bg-panel-alt hover:bg-[#E3F2F2]'}`}
                       >
                         {!n.isRead && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: meta.color }} />}
                         <Icon size={14} style={{ color: meta.color }} className="shrink-0" />

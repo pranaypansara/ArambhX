@@ -91,7 +91,7 @@ function CopilotTab({ activeStudentId, setActiveStudentId }) {
               <button
                 key={s.student.id}
                 onClick={() => setActiveStudentId(s.student.id)}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${active?.student.id === s.student.id ? 'bg-[#EDF7F8]' : 'hover:bg-[#F8FAF9]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${active?.student.id === s.student.id ? 'bg-panel-alt' : 'hover:bg-void'}`}
               >
                 <StudentAvatar name={s.student.name} size={28} />
                 <div className="min-w-0 flex-1">
@@ -237,7 +237,7 @@ function WorkflowTab({ studentFilter }) {
       title="Intervention Workflow"
       subtitle="Recommended → Assigned → In Progress → Completed → Evaluated → Escalated / Closed · click a row to advance status"
       actions={
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-400">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-400">
           <option value="ALL">All statuses</option>
           {WORKFLOW_ORDER.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
         </select>
@@ -267,7 +267,7 @@ function WorkflowTab({ studentFilter }) {
               {rows.map((iv) => {
                 const meta = STATUS_META[iv.status];
                 return (
-                  <tr key={iv.id} className="border-b hairline last:border-0 hover:bg-[#F8FAF9] cursor-pointer" onClick={() => { setEditing(iv.id); setDraftStatus(iv.status); }}>
+                  <tr key={iv.id} className="border-b hairline last:border-0 hover:bg-void cursor-pointer" onClick={() => { setEditing(iv.id); setDraftStatus(iv.status); }}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <StudentAvatar name={iv.student.name} size={26} />
@@ -303,7 +303,7 @@ function WorkflowTab({ studentFilter }) {
               <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1.5">Status</div>
               <select
                 value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)}
-                className="w-full bg-[#ffffff] border hairline rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-teal-400"
+                className="w-full bg-panel border hairline rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-teal-400"
               >
                 {([editingIv.status, ...nextStatuses]).map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
               </select>

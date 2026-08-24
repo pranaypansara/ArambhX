@@ -49,14 +49,14 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={onCloseMobile} />
       )}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen w-64 shrink-0 z-50 flex flex-col transition-transform duration-300 border-r border-[#D9E8E7] lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: '#EDF7F8' }}
+        className={`fixed lg:sticky top-0 left-0 h-screen w-64 shrink-0 z-50 flex flex-col transition-transform duration-300 border-r border-hairline lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: 'var(--color-panel-alt)' }}
       >
-        <div className="flex items-center gap-2.5 px-5 h-16 shrink-0" style={{ borderBottom: '1px solid #D9E8E7' }}>
+        <div className="flex items-center gap-2.5 px-5 h-16 shrink-0" style={{ borderBottom: '1px solid var(--color-hairline)' }}>
           <img src="/academic-logo.png" alt="Academic Logo" className="w-10 h-10 object-contain shrink-0" />
           <div className="leading-tight">
-            <div className="font-display font-black text-[#153A5B] text-base tracking-tight">ArambhX</div>
-            <div className="text-[10px] font-mono tracking-wide font-extrabold" style={{ color: '#2A8588' }}>STUDENT PULSE</div>
+            <div className="font-display font-black text-ink text-base tracking-tight">ArambhX</div>
+            <div className="text-[10px] font-mono tracking-wide font-extrabold" style={{ color: 'var(--color-teal)' }}>STUDENT PULSE</div>
           </div>
         </div>
 
@@ -70,48 +70,48 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group"
               style={({ isActive }) =>
                 isActive
-                  ? { background: '#D7EEEE', color: '#153A5B', fontWeight: 700, border: '1px solid #C4E2E2' }
-                  : { color: '#153A5B' }
+                  ? { background: 'var(--color-panel-active)', color: 'var(--color-ink)', fontWeight: 700, border: '1px solid var(--color-teal-dim)' }
+                  : { color: 'var(--color-ink)' }
               }
               onMouseEnter={(e) => { if (!e.currentTarget.classList.contains('active-nav')) e.currentTarget.style.background = 'rgba(42,133,136,0.08)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = e.currentTarget.getAttribute('aria-current') === 'page' ? '#D7EEEE' : 'transparent'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = e.currentTarget.getAttribute('aria-current') === 'page' ? 'var(--color-panel-active)' : 'transparent'; }}
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={16} strokeWidth={2} style={{ color: isActive ? '#2A8588' : '#607580' }} />
+                  <Icon size={16} strokeWidth={2} style={{ color: isActive ? 'var(--color-teal)' : 'var(--color-slate-500)' }} />
                   <span>{label}</span>
-                  {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: '#2A8588' }} />}
+                  {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-teal)' }} />}
                 </>
               )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-3 space-y-2" style={{ borderTop: '1px solid #D9E8E7' }}>
+        <div className="p-3 space-y-2" style={{ borderTop: '1px solid var(--color-hairline)' }}>
           {isStaff && (
             <NavLink
               to="/student-view"
               onClick={onCloseMobile}
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-colors"
-              style={{ color: '#153A5B' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(42,133,136,0.08)'; e.currentTarget.style.color = '#2A8588'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#153A5B'; }}
+              style={{ color: 'var(--color-ink)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(42,133,136,0.08)'; e.currentTarget.style.color = 'var(--color-teal)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-ink)'; }}
             >
-              <GraduationCap size={15} className="text-[#2A8588]" />
+              <GraduationCap size={15} className="text-teal" />
               <span>Student-facing view</span>
             </NavLink>
           )}
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-[#C84C4C] hover:bg-[#C84C4C]/10 transition"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-coral-dim hover:bg-coral-dim/10 transition"
           >
             <LogOut size={15} />
             <span>Sign Out</span>
           </button>
 
           {user && (
-            <div className="px-3 pt-1 text-[10px] font-mono font-bold text-[#607580] flex items-center gap-1.5">
+            <div className="px-3 pt-1 text-[10px] font-mono font-bold text-slate-500 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3A8F6A]" />
               {user.name} · {role}
             </div>

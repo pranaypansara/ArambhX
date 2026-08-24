@@ -38,8 +38,8 @@ export default function AuditLogs() {
         title="Audit Logs"
         subtitle="Every model, alert and intervention event recorded, with the acting user."
         actions={
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 px-3 py-1.5 rounded-full bg-[#EDF7F8] border border-[#D9E8E7]">
-            <ScrollText size={13} className="text-[#2A8588]" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 px-3 py-1.5 rounded-full bg-panel-alt border border-hairline">
+            <ScrollText size={13} className="text-teal" />
             {data?.total ?? 0} events
           </span>
         }
@@ -50,7 +50,7 @@ export default function AuditLogs() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400"
+            className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400"
           >
             <option value="ALL">All actions</option>
             {ACTIONS.map((a) => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
@@ -80,7 +80,7 @@ export default function AuditLogs() {
               </thead>
               <tbody>
                 {logs.map((l) => (
-                  <tr key={l.id} className="border-b hairline last:border-0 hover:bg-[#F8FAF9]">
+                  <tr key={l.id} className="border-b hairline last:border-0 hover:bg-void">
                     <td className="px-4 py-3 text-xs font-mono text-slate-500 whitespace-nowrap">{formatDateTime(l.createdAt)}</td>
                     <td className="px-3 py-3">
                       <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full" style={{ color: ACTION_COLORS[l.action] || '#607580', background: `${ACTION_COLORS[l.action] || '#607580'}1a` }}>
