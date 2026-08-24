@@ -24,10 +24,10 @@ export function ToastProvider({ children }) {
         {toasts.map((t) => {
           const Icon = ICONS[t.type] || Info;
           return (
-            <div key={t.id} className="bg-white border border-[#D9E8E7] rounded-2xl shadow-xl px-3.5 py-3 flex items-start gap-2.5 count-up">
+            <div key={t.id} className="bg-white border border-hairline rounded-2xl shadow-xl px-3.5 py-3 flex items-start gap-2.5 count-up">
               <Icon size={16} style={{ color: COLORS[t.type] || '#2A8588' }} className="mt-0.5 shrink-0" />
-              <span className="text-xs font-extrabold text-[#153A5B] flex-1">{t.message}</span>
-              <button onClick={() => dismiss(t.id)} className="text-[#607580] hover:text-[#153A5B]">
+              <span className="text-xs font-extrabold text-ink flex-1">{t.message}</span>
+              <button onClick={() => dismiss(t.id)} className="text-slate-500 hover:text-ink">
                 <X size={14} />
               </button>
             </div>

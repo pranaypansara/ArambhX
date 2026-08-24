@@ -64,13 +64,13 @@ export default function SmartAlerts() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search alerts…" className="bg-[#ffffff] border hairline rounded-lg pl-8 pr-3 py-1.5 text-sm text-slate-700 placeholder:text-slate-500 focus:border-teal-400 outline-none w-48" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search alerts…" className="bg-panel border hairline rounded-lg pl-8 pr-3 py-1.5 text-sm text-slate-700 placeholder:text-slate-500 focus:border-teal-400 outline-none w-48" />
           </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400">
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400">
             <option value="ALL">All alert types</option>
             {ALERT_TYPES.map((t) => <option key={t} value={t}>{TYPE_META[t]?.label || t.replace('_', ' ')}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-400">
             <option value="OPEN">Active + Acknowledged</option>
             <option value="ACTIVE">Active only</option>
             <option value="ACKNOWLEDGED">Acknowledged only</option>

@@ -18,7 +18,7 @@ function Metric({ label, before, after }) {
       <div className="flex items-center gap-2 font-mono">
         <span className="text-slate-500 text-sm">{before}%</span>
         <ArrowRight size={12} className="text-slate-500" />
-        <span className={`text-sm font-semibold ${improved ? 'text-[#3A8F6A]' : 'text-[#C84C4C]'}`}>{after}%</span>
+        <span className={`text-sm font-semibold ${improved ? 'text-[#3A8F6A]' : 'text-coral-dim'}`}>{after}%</span>
       </div>
     </div>
   );

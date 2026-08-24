@@ -244,7 +244,7 @@ export default function PulseAIPanel({ open, onClose }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={ready ? "Ask about a student, alert, or intervention…" : "Loading cohort…"}
-            className="flex-1 bg-[#ffffff] border hairline rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-teal-400 outline-none"
+            className="flex-1 bg-panel border hairline rounded-lg px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-teal-400 outline-none"
           />
           <button type="submit" disabled={!ready} className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 disabled:opacity-40" style={{ background: '#7a5963', color: '#fbf3f0' }}>
             <Send size={15} />

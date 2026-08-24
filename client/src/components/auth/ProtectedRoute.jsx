@@ -5,9 +5,9 @@ import { useToast } from '@/components/ui/Toast';
 
 function FullPageLoader() {
   return (
-    <div className="min-h-screen bg-[#F8FAF9] flex items-center justify-center">
-      <div className="flex items-center gap-2 text-xs font-bold text-[#607580]">
-        <span className="w-3 h-3 rounded-full border-2 border-[#2A8588] border-t-transparent animate-spin" />
+    <div className="min-h-screen bg-void flex items-center justify-center">
+      <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+        <span className="w-3 h-3 rounded-full border-2 border-teal border-t-transparent animate-spin" />
         Loading your session…
       </div>
     </div>

@@ -10,6 +10,8 @@
   --color-panel-alt: #EDF7F8;
   --color-hairline: #D9E8E7;
   --color-hairline-soft: #D9E8E7;
+  --color-panel-active: #D7EEEE;
+  --color-panel-active-border: #C4E2E2;
 
   /* ---- Accents ---- */
   --color-teal: #2A8588; /* Primary Teal #2A8588 */
@@ -49,15 +51,62 @@
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
+/* ---- Dark mode: real black screen / white type, not just a contrast tweak ----
+   Overrides the same custom properties Tailwind's utilities already read from
+   (bg-panel, text-ink, border-hairline, etc.), so no component classes need
+   to change — just this variable table. */
+html.dark {
+  --color-void: #0B0F0E;
+  --color-deep: #0B0F0E;
+  --color-panel: #14181A;
+  --color-panel-solid: #14181A;
+  --color-panel-alt: #1A2022;
+  --color-panel-active: #1F2A2B;
+  --color-panel-active-border: #2E8E8D;
+  --color-hairline: #2B3335;
+  --color-hairline-soft: #2B3335;
+
+  --color-teal: #3FB0AF;
+  --color-teal-dim: #2E8E8D;
+  --color-cobalt: #E8EEF2;
+  --color-cobalt-dim: #C7D2D9;
+  --color-lime: #57B888;
+  --color-lime-dim: #3F9C6E;
+  --color-amber: #E3A94A;
+  --color-amber-dim: #C98F2E;
+  --color-coral: #E6805D;
+  --color-coral-dim: #DE6666;
+
+  --color-paper: #0B0F0E;
+  --color-paper-alt: #1A2022;
+  --color-ink: #F1F5F4;
+
+  --color-slate-50: #14181A;
+  --color-slate-100: #14181A;
+  --color-slate-200: #F1F5F4;
+  --color-slate-300: #F1F5F4;
+  --color-slate-400: #9AA8A9;
+  --color-slate-500: #9AA8A9;
+  --color-slate-600: #9AA8A9;
+  --color-slate-700: #F1F5F4;
+  --color-slate-800: #F1F5F4;
+  --color-slate-900: #F1F5F4;
+
+  --color-teal-300: #3FB0AF;
+  --color-teal-400: #3FB0AF;
+  --color-teal-500: #3FB0AF;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background: #F8FAF9;
-  color: #153A5B;
+  background: var(--color-void);
+  color: var(--color-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::selection {
@@ -89,19 +138,19 @@ body {
 
 /* ---- Reusable primitives ---- */
 .panel {
-  background: #FFFFFF;
-  border: 1px solid #D9E8E7;
+  background: var(--color-panel);
+  border: 1px solid var(--color-hairline);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(21, 58, 91, 0.04);
 }
 
 .panel-alt {
-  background: #EDF7F8;
-  border: 1px solid #D9E8E7;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-hairline);
   border-radius: 16px;
 }
 
-.hairline { border-color: #D9E8E7; }
+.hairline { border-color: var(--color-hairline); }
 
 .font-display { font-family: var(--font-display); }
 .font-mono { font-family: var(--font-mono); }
@@ -158,17 +207,4 @@ body {
   background: rgba(42, 133, 136, 0.08);
 }
 
-/* High-contrast mode */
-.theme-contrast .panel,
-.theme-contrast .panel-alt {
-  border-color: #2A8588 !important;
-}
-.theme-contrast body {
-  color: #153A5B;
-}
-.theme-contrast .text-slate-400 {
-  color: #607580 !important;
-}
-.theme-contrast .text-slate-500 {
-  color: #153A5B !important;
-}
+

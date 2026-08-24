@@ -107,15 +107,15 @@ export default function Students() {
             <input
               value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Search students…"
-              className="bg-[#ffffff] border hairline rounded-lg pl-8 pr-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:border-teal-400 outline-none w-48"
+              className="bg-panel border hairline rounded-lg pl-8 pr-3 py-1.5 text-sm text-slate-200 placeholder:text-slate-500 focus:border-teal-400 outline-none w-48"
             />
           </div>
 
-          <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+          <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
             {RISK_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
-          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
             <option value="ALL">All departments</option>
             {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
@@ -129,7 +129,7 @@ export default function Students() {
 
           <div className="flex items-center gap-1.5 ml-auto text-xs text-slate-500">
             <ArrowUpDown size={13} />
-            <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+            <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
               {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </div>
@@ -137,21 +137,21 @@ export default function Students() {
 
         {showMoreFilters && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t hairline">
-            <select value={semFilter} onChange={(e) => setSemFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+            <select value={semFilter} onChange={(e) => setSemFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
               <option value="ALL">All semesters</option>
               {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
             </select>
-            <select value={trendFilter} onChange={(e) => setTrendFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+            <select value={trendFilter} onChange={(e) => setTrendFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
               <option value="ALL">All risk trends</option>
               <option value="UP">Rising</option>
               <option value="DOWN">Falling</option>
               <option value="FLAT">Flat</option>
             </select>
-            <select value={alertFilter} onChange={(e) => setAlertFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+            <select value={alertFilter} onChange={(e) => setAlertFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
               <option value="ALL">All alert types</option>
               {ALERT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
-            <select value={ivStatusFilter} onChange={(e) => setIvStatusFilter(e.target.value)} className="bg-[#ffffff] border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
+            <select value={ivStatusFilter} onChange={(e) => setIvStatusFilter(e.target.value)} className="bg-panel border hairline rounded-lg px-2.5 py-1.5 text-sm text-slate-300 outline-none focus:border-teal-400">
               <option value="ALL">All intervention statuses</option>
               <option value="NONE">No active intervention</option>
               {INTERVENTION_STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
