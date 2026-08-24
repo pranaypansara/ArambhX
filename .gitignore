@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Environment / secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
 # Local ML training data and generated artifacts are not runtime dependencies.
 server/ml/source/
 
