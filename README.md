@@ -1,51 +1,99 @@
-# ARAMBHX
+ARAMBHX
 
+Live Demo
+
+Production Website: https://arambhx.vercel.app
+
+Production Backend API: https://arambhx-api.vercel.app
+
+Production ML Service: https://arambhx-ml.onrender.com
+
+GitHub Repository: https://github.com/pranaypansara/Smart-India-Hackathon
+
+The frontend is deployed on Vercel, the Express backend is deployed on Vercel, the FastAPI ML service is deployed on Render, and the database is hosted on Neon PostgreSQL.
+
+Production Demo Accounts
+
+All demo accounts use the password:
+
+ArambhDemo!2026
+
+Role
+
+Email
+
+ADMIN
+
+admin@arambh.demo
+
+FACULTY
+
+faculty@arambh.demo
+
+COUNSELOR
+
+counselor@arambh.demo
+
+STUDENT
+
+student@arambh.demo
 
 ARAMBHX is an AI-powered student dropout risk monitoring and intervention system. It helps institutions identify students who may be at risk, analyze their academic and engagement patterns, generate predictions using machine learning, and support staff in taking timely interventions.
 
-
 The system combines a React frontend, Express backend, Neon PostgreSQL database, and Python-based ML services.
 
+Features
 
----
+Role-based authentication
 
+Four user roles:
 
-## Features
+ADMIN
 
+FACULTY
 
-- Role-based authentication
-- Four user roles:
-  - ADMIN
-  - FACULTY
-  - COUNSELOR
-  - STUDENT
-- Student monitoring and profiles
-- Student ownership restrictions
-- ML-based dropout risk prediction
-- ML risk intelligence and trend analysis
-- Prediction history
-- Risk levels and probabilities
-- High-risk student identification
-- Smart alerts
-- Intervention recommendations
-- Intervention status tracking
-- Notification system
-- Reports and analytics
-- Outcomes and impact tracking
-- Risk trend visualization
-- Academic and student data analysis
-- Admin audit logs
-- Real-time data from Neon PostgreSQL
-- Historical student data for meaningful charts and trends
+COUNSELOR
 
+STUDENT
 
----
+Student monitoring and profiles
 
+Student ownership restrictions
 
-# System Architecture
+ML-based dropout risk prediction
 
+ML risk intelligence and trend analysis
 
-```text
+Prediction history
+
+Risk levels and probabilities
+
+High-risk student identification
+
+Smart alerts
+
+Intervention recommendations
+
+Intervention status tracking
+
+Notification system
+
+Reports and analytics
+
+Outcomes and impact tracking
+
+Risk trend visualization
+
+Academic and student data analysis
+
+Admin audit logs
+
+Real-time data from Neon PostgreSQL
+
+Historical student data for meaningful charts and trends
+
+System Architecture
+
                          ┌─────────────────────┐
                          │      Frontend       │
                          │    React + Vite     │
