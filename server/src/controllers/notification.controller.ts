@@ -30,7 +30,7 @@ export const getAllNotifications = async (
     const read = toBooleanFilter(parsedQuery.read);
 
     const { notifications, total } = await listNotifications({
-      userId: req.user!.id,
+      userId: (req as any).user!.id,
       page,
       limit,
       read
@@ -61,7 +61,7 @@ export const getUnreadCount = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const count = await getUnreadNotificationCount(req.user!.id);
+    const count = await getUnreadNotificationCount((req as any).user!.id);
 
     res.status(200).json({
       success: true,
@@ -84,7 +84,7 @@ export const markOneRead = async (
   try {
     const { id } = notificationIdParamSchema.parse(req.params);
 
-    const notification = await markNotificationRead(id, req.user!.id);
+    const notification = await markNotificationRead(id, (req as any).user!.id);
     if (!notification) {
       return res.status(404).json({
         success: false,
@@ -111,7 +111,7 @@ export const markAllRead = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const updated = await markAllNotificationsRead(req.user!.id);
+    const updated = await markAllNotificationsRead((req as any).user!.id);
 
     res.status(200).json({
       success: true,

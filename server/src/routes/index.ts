@@ -46,7 +46,7 @@ router.get(
     res.status(200).json({
       success: true,
       message: 'Access granted. Welcome to the ADMIN dashboard!',
-      user: req.user
+      user: (req as any).user
     });
   }
 );
@@ -60,7 +60,7 @@ router.get(
     res.status(200).json({
       success: true,
       message: 'Access granted. Welcome, staff member!',
-      user: req.user
+      user: (req as any).user
     });
   }
 );

@@ -102,7 +102,7 @@ export const getCurrentUser = async (
   try {
     res.status(200).json({
       success: true,
-      data: req.user
+      data: (req as any).user
     });
   } catch (error) {
     next(error);

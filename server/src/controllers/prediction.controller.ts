@@ -22,7 +22,7 @@ export const predictStudentRisk = async (
   try {
     const { id } = studentIdParamSchema.parse(req.params);
 
-    const result = await predictStudent(id, req.user?.id);
+    const result = await predictStudent(id, (req as any).user?.id);
 
     res.status(200).json({
       success: true,

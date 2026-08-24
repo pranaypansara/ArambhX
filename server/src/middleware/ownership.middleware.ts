@@ -9,14 +9,14 @@ import { Request, Response, NextFunction } from 'express';
  * student_id — the URL parameter is never trusted as an ownership value.
  */
 export const studentSelfOnly = (req: Request, res: Response, next: NextFunction): any => {
-  if (!req.user) {
+  if (!(req as any).user) {
     return res.status(401).json({
       success: false,
       message: 'Not authorized, user authentication context missing'
     });
   }
 
-  if (req.user.role !== 'STUDENT') {
+  if ((req as any).user.role !== 'STUDENT') {
     return next();
   }
 
@@ -28,7 +28,7 @@ export const studentSelfOnly = (req: Request, res: Response, next: NextFunction)
     });
   }
 
-  if (req.user.studentId == null || req.user.studentId !== pathStudentId) {
+  if ((req as any).user.studentId == null || (req as any).user.studentId !== pathStudentId) {
     return res.status(403).json({
       success: false,
       message: 'Forbidden: Students may only access their own records'

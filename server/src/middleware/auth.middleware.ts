@@ -17,7 +17,7 @@ interface DecodedToken {
  *   3. Verify + decode the JWT.
  *   4. Validate the payload contains a usable user id.
  *   5. Reload the authoritative user profile from the database (never trust
- *      stale token claims for roles/links) and attach it to req.user.
+ *      stale token claims for roles/links) and attach it to (req as any).user.
  *
  * Missing/malformed headers, invalid tokens and expired tokens all produce the
  * 401 convention. JWT internals are never exposed to the client.
@@ -60,7 +60,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
       });
     }
 
-    req.user = user as UserPayload;
+    (req as any).user = user as UserPayload;
     next();
   } catch (error: any) {
     console.error('[Auth Middleware] JWT Verification Error:', error?.message);

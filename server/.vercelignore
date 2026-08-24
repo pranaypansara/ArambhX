@@ -1,0 +1,14 @@
+node_modules
+dist
+ml/service/venv
+ml/service/.venv
+ml/service/__pycache__
+ml/service/venv
+.venv
+venv
+__pycache__
+*.pyc
+.git
+.gitignore
+README.md
+ml

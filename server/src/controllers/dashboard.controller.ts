@@ -93,7 +93,7 @@ export const getStudentDashboardData = async (
 
     // STUDENT callers get the sanitized self-view (no raw ML metrics/severity).
     const data =
-      req.user?.role === "STUDENT"
+      (req as any).user?.role === "STUDENT"
         ? await getStudentSafeDashboard(studentId)
         : await getStudentDashboard(studentId);
 
