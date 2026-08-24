@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: arambhx-ml
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    repo: https://github.com/hencypatel-27/Smart-India-Hackathon
+    rootDir: server/ml/service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+    autoDeploy: true
