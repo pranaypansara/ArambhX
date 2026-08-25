@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpDown, ChevronRight, Scale, Search as SearchIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, Scale, Search as SearchIcon, SlidersHorizontal, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { PageHeader, SectionCard } from '@/components/ui/Page';
 import RiskBadge from '@/components/ui/RiskBadge';
 import TrendIndicator from '@/components/ui/TrendIndicator';
 import StudentAvatar from '@/components/ui/StudentAvatar';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { useAsyncData, fetchSummaries, ALERT_TYPES, INTERVENTION_STATUSES } from '@/services/data';
+import { Modal } from '@/components/ui/Overlay';
+import { useAsyncData, fetchSummaries, ALERT_TYPES, INTERVENTION_STATUSES, clearSummaryCache } from '@/services/data';
 import { isOpenAlert } from '@/services/data';
 import { formatDate } from '@/lib/riskUtils';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/Toast';
+import { api } from '@/services/api';
 
 const RISK_OPTIONS = [
   { value: 'ALL', label: 'All risk levels' },
@@ -44,9 +48,169 @@ function actionLabel(s) {
   return 'Review';
 }
 
+function SyncModal({ open, onClose, onSynced }) {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const inputRef = useRef(null);
+  const toast = useToast();
+
+  const reset = () => {
+    setFile(null);
+    setPreview(null);
+    setLoading(false);
+    setCommitting(false);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0] || null;
+    setFile(f);
+    setPreview(null);
+  };
+
+  const handlePreview = async () => {
+    if (!file) {
+      toast.show('Please select a file.', 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.previewStudentSync(fd);
+      setPreview(res.data);
+    } catch (err) {
+      toast.show(err.message || 'Preview failed.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCommit = async () => {
+    if (!file) return;
+    if (preview?.summary?.invalid > 0) {
+      toast.show('Cannot commit with invalid rows. Fix the file and preview again.', 'error');
+      return;
+    }
+    setCommitting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.commitStudentSync(fd);
+      toast.show(`Sync complete: ${res.data.summary.toCreate} created, ${res.data.summary.toUpdate} updated.`, 'success');
+      clearSummaryCache();
+      onSynced?.();
+      handleClose();
+    } catch (err) {
+      const payload = err.payload?.data;
+      if (payload?.rows) setPreview(payload);
+      toast.show(err.payload?.message || err.message || 'Commit failed.', 'error');
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const summary = preview?.summary;
+  const rows = preview?.rows || [];
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Student Data Sync" width={860}>
+      <div className="space-y-4">
+        <p className="text-xs text-slate-400">Upload CSV, XLS, or XLSX. Matching is by <span className="text-slate-200 font-mono">enrollment_number</span> — existing students are updated (only supplied fields), new ones are created. Seeded and imported students share the same table.</p>
+
+        <div className="flex items-center gap-3">
+          <input ref={inputRef} type="file" accept=".csv,.xls,.xlsx" onChange={handleFileChange} className="flex-1 text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-teal-500 file:text-white file:text-xs file:font-medium hover:file:bg-teal-600" />
+          <button onClick={handlePreview} disabled={!file || loading} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-panel border hairline text-slate-200 hover:border-teal-400 disabled:opacity-40">
+            <FileSpreadsheet size={14} /> {loading ? 'Previewing…' : 'Preview'}
+          </button>
+        </div>
+
+        <div className="text-[11px] text-slate-500 space-y-1 bg-white/[0.03] border hairline rounded-lg p-3">
+          <div className="font-mono font-bold text-slate-300">Accepted columns (case-insensitive, normalized):</div>
+          <div>enrollment_number: <span className="text-slate-400">student_id, studentId, enrollment_no, enrollment_number</span></div>
+          <div>name: <span className="text-slate-400">name, first_name + last_name, firstName/lastName</span></div>
+          <div>email: <span className="text-slate-400">email, email_address</span> | department: <span className="text-slate-400">dept</span> | semester: <span className="text-slate-400">sem</span></div>
+        </div>
+
+        {preview && summary && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="panel p-3"><div className="text-[11px] uppercase tracking-wide text-slate-500">To Create</div><div className="text-lg font-mono font-bold text-teal-300">{summary.toCreate}</div></div>
+              <div className="panel p-3"><div className="text-[11px] uppercase tracking-wide text-slate-500">To Update</div><div className="text-lg font-mono font-bold text-amber-400">{summary.toUpdate}</div></div>
+              <div className="panel p-3"><div className="text-[11px] uppercase tracking-wide text-slate-500">Unchanged</div><div className="text-lg font-mono font-bold text-slate-300">{summary.unchanged}</div></div>
+              <div className="panel p-3"><div className="text-[11px] uppercase tracking-wide text-slate-500">Invalid</div><div className="text-lg font-mono font-bold text-rose-400">{summary.invalid}</div></div>
+            </div>
+
+            <div className="max-h-[36vh] overflow-auto border hairline rounded-lg">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-panel">
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500 border-b hairline">
+                    <th className="px-2 py-2">Row</th>
+                    <th className="px-2 py-2">Enrollment</th>
+                    <th className="px-2 py-2">Action</th>
+                    <th className="px-2 py-2">Details / Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.rowNumber} className={`border-b hairline last:border-0 ${r.action === 'invalid' ? 'bg-rose-500/5' : r.action === 'create' ? 'bg-teal-500/5' : r.action === 'update' ? 'bg-amber-500/5' : ''}`}>
+                      <td className="px-2 py-2 font-mono text-slate-400">{r.rowNumber}</td>
+                      <td className="px-2 py-2 font-mono text-slate-200">{r.enrollmentNumber || '—'}</td>
+                      <td className="px-2 py-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${r.action === 'create' ? 'bg-teal-500/15 text-teal-300 border-teal-500/20' : r.action === 'update' ? 'bg-amber-500/15 text-amber-300 border-amber-500/20' : r.action === 'unchanged' ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-rose-500/15 text-rose-300 border-rose-500/20'}`}>
+                          {r.action === 'invalid' ? <AlertCircle size={12} /> : r.action === 'unchanged' ? <CheckCircle2 size={12} /> : null}
+                          {r.action}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 text-slate-400 max-w-[360px]">
+                        {r.errors.length > 0 ? (
+                          <ul className="list-disc pl-4 space-y-0.5 text-rose-300">
+                            {r.errors.map((e, i) => <li key={i}>{e}</li>)}
+                          </ul>
+                        ) : r.action === 'create' ? (
+                          <span className="text-slate-400">Will create: {Object.entries(r.fields).map(([k, v]) => `${k}=${String(v)}`).join(', ')}</span>
+                        ) : r.action === 'update' ? (
+                          <span className="text-slate-400">Will update: {Object.entries(r.fields).filter(([k]) => k !== 'enrollmentNumber').map(([k, v]) => `${k}=${String(v)}`).join(', ') || '—'}</span>
+                        ) : (
+                          <span className="text-slate-500">No changes</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={handleClose} className="text-xs px-3 py-2 rounded-lg border hairline text-slate-300 hover:bg-white/5">Cancel</button>
+              <button onClick={handleCommit} disabled={committing || summary.invalid > 0} className="flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-40">
+                <Upload size={14} /> {committing ? 'Committing…' : `Commit ${summary.toCreate + summary.toUpdate} changes`}
+              </button>
+            </div>
+            {summary.invalid > 0 && <p className="text-xs text-rose-400 flex items-center gap-1.5"><AlertCircle size={12} /> Fix invalid rows before committing. The import is transactional — it will not commit with errors.</p>}
+          </div>
+        )}
+
+        {!preview && (
+          <p className="text-xs text-slate-500">Select a file and click Preview to validate before committing. The commit is transactional.</p>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 export default function Students() {
   const navigate = useNavigate();
   const { data: summaries, loading, error, reload } = useAsyncData(() => fetchSummaries(), []);
+  const { role } = useAuth();
+  const canSync = role === 'ADMIN' || role === 'FACULTY';
 
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [deptFilter, setDeptFilter] = useState('ALL');
@@ -58,6 +222,7 @@ export default function Students() {
   const [query, setQuery] = useState('');
   const [compareIds, setCompareIds] = useState([]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
 
   const DEPARTMENTS = useMemo(() => ([...new Set((summaries || []).map(s => s.student.department))]), [summaries]);
   const SEMESTERS = useMemo(() => ([...new Set((summaries || []).map(s => s.student.semester))].sort((a, b) => a - b)), [summaries]);
@@ -89,14 +254,23 @@ export default function Students() {
         eyebrow="Screen 02"
         title="Student Priority Queue"
         subtitle="Ranked by urgency — not just risk. A fast-deteriorating student can outrank a higher but stable one."
-        actions={compareIds.length >= 2 && (
-          <button
-            onClick={() => navigate(`/comparison?ids=${compareIds.join(',')}`)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
-            style={{ background: '#c98f9f', color: '#fff' }}
-          >
-            <Scale size={13} /> Compare {compareIds.length} students
-          </button>
+        actions={(
+          <div className="flex items-center gap-2">
+            {canSync && (
+              <button onClick={() => setSyncOpen(true)} className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600">
+                <Upload size={13} /> Sync Data
+              </button>
+            )}
+            {compareIds.length >= 2 && (
+              <button
+                onClick={() => navigate(`/comparison?ids=${compareIds.join(',')}`)}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
+                style={{ background: '#c98f9f', color: '#fff' }}
+              >
+                <Scale size={13} /> Compare {compareIds.length} students
+              </button>
+            )}
+          </div>
         )}
       />
 
@@ -250,6 +424,8 @@ export default function Students() {
           </div>
         )}
       </SectionCard>
+
+      {canSync && <SyncModal open={syncOpen} onClose={() => setSyncOpen(false)} onSynced={() => { clearSummaryCache(); reload({ force: true }); }} />}
     </div>
   );
 }

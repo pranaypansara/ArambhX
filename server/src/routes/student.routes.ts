@@ -28,6 +28,8 @@ import {
   getStudentInterventions
 } from '../controllers/intervention.controller.js';
 import { getStudentDashboardData } from '../controllers/dashboard.controller.js';
+import multer from 'multer';
+import { previewSync, commitSyncHandler } from '../controllers/studentSync.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/role.middleware.js';
 import { studentSelfOnly } from '../middleware/ownership.middleware.js';
@@ -37,6 +39,20 @@ import { createAttendanceSchema } from '../validators/attendance.validator.js';
 import { createAcademicRecordSchema } from '../validators/academic.validator.js';
 
 const router = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = file.originalname.toLowerCase().split('.').pop() || '';
+    if (['csv', 'xls', 'xlsx'].includes(ext)) cb(null, true);
+    else cb(new Error('Only CSV, XLS, XLSX files are allowed.'));
+  },
+});
+
+// Student Data Sync (CSV/XLS/XLSX) - must be before /:id routes
+router.post('/sync/preview', protect, authorize('ADMIN', 'FACULTY'), upload.single('file'), previewSync);
+router.post('/sync', protect, authorize('ADMIN', 'FACULTY'), upload.single('file'), commitSyncHandler);
 
 // Student CRUD Routes
 router.post(

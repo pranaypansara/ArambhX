@@ -33,6 +33,30 @@ function buildQuery(params) {
   return s ? `?${s}` : "";
 }
 
+async function requestFormData(method, path, formData) {
+  const url = `${API_BASE_URL}${path}`;
+  const headers = {};
+  const requestToken = _token;
+  if (requestToken) headers.Authorization = `Bearer ${requestToken}`;
+  let res;
+  try {
+    res = await fetch(url, { method, headers, body: formData });
+  } catch (err) {
+    throw new ApiError("Unable to reach the server. Please check your connection and try again.", 0, null);
+  }
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch (err) {}
+  if (!res.ok) {
+    if (res.status === 401 && requestToken && requestToken === _token && _onUnauthorized) {
+      _onUnauthorized();
+    }
+    throw new ApiError(payload?.message || `Request failed (${res.status})`, res.status, payload);
+  }
+  return payload || { success: true };
+}
+
 async function request(method, path, { params, body } = {}) {
   const url = `${API_BASE_URL}${path}${buildQuery(params)}`;
   const headers = { Accept: "application/json" };
@@ -142,4 +166,8 @@ export const api = {
 
   // Audit
   listAuditLogs: (params) => get("/audit-logs", params),
+
+  // Student Data Sync
+  previewStudentSync: (formData) => requestFormData("POST", "/students/sync/preview", formData),
+  commitStudentSync: (formData) => requestFormData("POST", "/students/sync", formData),
 };
