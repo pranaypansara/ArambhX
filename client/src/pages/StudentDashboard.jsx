@@ -61,7 +61,7 @@ function StudentPulseChat() {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="w-full flex items-center justify-center gap-1.5 text-xs font-extrabold px-3 py-2.5 rounded-xl bg-ink text-white shadow-md hover:bg-[#0E2942] transition">
+      <button onClick={() => setOpen(true)} className="w-full flex items-center justify-center gap-1.5 text-xs font-extrabold px-3 py-2.5 rounded-xl bg-[#153A5B] text-white shadow-md hover:bg-[#0E2942] transition">
         <MessageCircle size={14} /> Start a conversation with Pulse AI
       </button>
     );
@@ -69,19 +69,19 @@ function StudentPulseChat() {
 
   return (
     <div className="rounded-2xl overflow-hidden border border-hairline shadow-lg">
-      <div ref={scrollRef} className="max-h-56 overflow-y-auto p-3 space-y-2 bg-ink">
+      <div ref={scrollRef} className="max-h-56 overflow-y-auto p-3 space-y-2 bg-[#153A5B]">
         {messages.map((m, i) => (
           <div key={i} className={`text-xs px-3 py-2 rounded-xl max-w-[85%] font-medium ${m.role === 'user' ? 'ml-auto bg-teal text-white' : 'bg-panel/20 text-white'}`}>
             {m.text}
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap gap-1 px-2 pt-2 bg-ink">
+      <div className="flex flex-wrap gap-1 px-2 pt-2 bg-[#153A5B]">
         {STUDENT_PROMPTS.map((p) => (
           <button key={p} onClick={() => send(p)} className="text-[10px] px-2 py-1 rounded-full text-panel-alt border border-teal font-bold">{p}</button>
         ))}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2 p-2 bg-ink">
+      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2 p-2 bg-[#153A5B]">
         <input
           value={input} onChange={(e) => setInput(e.target.value)}
           placeholder="Ask a question…"
@@ -176,7 +176,7 @@ export default function StudentDashboard() {
           )}
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-hairline shadow-sm">
+            <div className="flex items-center gap-2 bg-panel px-3 py-1.5 rounded-xl border border-hairline shadow-sm">
               <StudentAvatar name={displayName} size={28} ring="#2A8588" />
               <div className="text-left">
                 <span className="text-xs font-black text-ink block leading-tight">{displayName}</span>
@@ -186,7 +186,7 @@ export default function StudentDashboard() {
 
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-white border border-hairline text-coral-dim hover:bg-coral-dim/10 transition"
+              className="p-2 rounded-xl bg-panel border border-hairline text-coral-dim hover:bg-coral-dim/10 transition"
               title="Sign out"
             >
               <LogOut size={16} />
@@ -216,7 +216,7 @@ export default function StudentDashboard() {
                 <p className="text-xs text-slate-500 mt-1 font-medium">Semester progress and personal academic recovery tracking.</p>
               </div>
 
-              <div className="bg-white px-4 py-2 rounded-2xl border border-hairline shadow-sm flex items-center gap-3">
+              <div className="bg-panel px-4 py-2 rounded-2xl border border-hairline shadow-sm flex items-center gap-3">
                 <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: overallColor }} />
                 <div>
                   <div className="text-[10px] uppercase tracking-wide text-slate-500 font-bold">Overall Status</div>
@@ -233,7 +233,7 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white border border-hairline rounded-3xl p-6 shadow-sm space-y-4">
+              <div className="lg:col-span-2 bg-panel border border-hairline rounded-3xl p-6 shadow-sm space-y-4">
                 <h2 className="font-display font-extrabold text-base text-ink flex items-center gap-2">
                   <ShieldCheck className="text-[#3A8F6A]" size={18} />
                   <span>My Recovery Plan & Assigned Tasks</span>
@@ -261,7 +261,7 @@ export default function StudentDashboard() {
               </div>
 
               <div className="space-y-6">
-                <div className="bg-white border border-hairline rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="bg-panel border border-hairline rounded-3xl p-6 shadow-sm space-y-4">
                   <h2 className="font-display font-extrabold text-base text-ink">Support Case Status</h2>
                   {activeCase ? (
                     <div className="text-xs space-y-2 text-slate-500">

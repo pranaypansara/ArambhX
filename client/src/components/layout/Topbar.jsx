@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Bell, Menu, CalendarDays, Sun, Moon, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import StudentAvatar from '@/components/ui/StudentAvatar';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/components/ui/Toast';
 import { api } from '@/services/api';
 
@@ -18,21 +19,11 @@ export default function Topbar({ onOpenMobile }) {
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState([]);
   const [unread, setUnread] = useState(0);
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const saved = window.localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  });
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const boxRef = useRef(null);
   const { user, role, isStaff, logout } = useAuth();
   const toast = useToast();
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark);
-    window.localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
 
   const loadUnread = () => {
     api.getUnreadCount()
@@ -129,7 +120,7 @@ export default function Topbar({ onOpenMobile }) {
         </div>
 
         <button
-          onClick={() => setIsDark(v => !v)}
+          onClick={toggleTheme}
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           className="w-9 h-9 flex items-center justify-center rounded-xl text-ink hover:bg-panel border border-transparent hover:border-hairline shrink-0 transition"
         >
