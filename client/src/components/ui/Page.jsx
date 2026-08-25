@@ -13,7 +13,7 @@ export function PageHeader({ eyebrow, title, subtitle, actions }) {
 
 export function SectionCard({ title, subtitle, actions, children, className = '' }) {
   return (
-    <div className={`panel p-5 bg-white border border-hairline shadow-sm rounded-2xl ${className}`}>
+    <div className={`panel p-5 bg-panel border border-hairline shadow-sm rounded-2xl ${className}`}>
       {(title || actions) && (
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>

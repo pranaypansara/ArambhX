@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import AppShell from '@/components/layout/AppShell';
@@ -28,40 +29,42 @@ function RoleRedirect() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<AuthPage />} />
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<AuthPage />} />
 
-            <Route element={<ProtectedRoute roles={STAFF_ROLES} />}>
-              <Route element={<AppShell />}>
-                <Route path="/" element={<Overview />} />
-                <Route path="/students" element={<Students />} />
-                <Route path="/students/:id" element={<StudentProfile />} />
-                <Route path="/risk-intelligence" element={<RiskIntelligence />} />
-                <Route path="/alerts" element={<SmartAlerts />} />
-                <Route path="/interventions" element={<Interventions />} />
-                <Route path="/outcomes" element={<Outcomes />} />
-                <Route path="/comparison" element={<Comparison />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/pulse-ai" element={<PulseAI />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route element={<ProtectedRoute roles={['ADMIN']} />}>
-                  <Route path="/audit-logs" element={<AuditLogs />} />
+              <Route element={<ProtectedRoute roles={STAFF_ROLES} />}>
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<Overview />} />
+                  <Route path="/students" element={<Students />} />
+                  <Route path="/students/:id" element={<StudentProfile />} />
+                  <Route path="/risk-intelligence" element={<RiskIntelligence />} />
+                  <Route path="/alerts" element={<SmartAlerts />} />
+                  <Route path="/interventions" element={<Interventions />} />
+                  <Route path="/outcomes" element={<Outcomes />} />
+                  <Route path="/comparison" element={<Comparison />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/pulse-ai" element={<PulseAI />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+                    <Route path="/audit-logs" element={<AuditLogs />} />
+                  </Route>
                 </Route>
               </Route>
-            </Route>
 
-            <Route path="/student-view" element={<ProtectedRoute />}>
-              <Route index element={<StudentDashboard />} />
-            </Route>
+              <Route path="/student-view" element={<ProtectedRoute />}>
+                <Route index element={<StudentDashboard />} />
+              </Route>
 
-            <Route path="*" element={<RoleRedirect />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ToastProvider>
+              <Route path="*" element={<RoleRedirect />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

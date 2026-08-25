@@ -161,7 +161,7 @@ export default function AuthPage() {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-xl">
-        <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+        <div className="bg-panel border border-hairline rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
           <div className="bg-panel-alt p-1.5 rounded-2xl border border-hairline flex items-center gap-1.5">
             <button
               type="button"
@@ -277,7 +277,7 @@ export default function AuthPage() {
                       className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all text-center ${
                         regRole === r.role
                           ? "bg-[var(--color-panel-active)] border-teal shadow-sm"
-                          : "bg-white border-hairline hover:border-teal"
+                          : "bg-panel border-hairline hover:border-teal"
                       }`}
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-panel-alt text-teal mb-2">
@@ -419,9 +419,9 @@ export default function AuthPage() {
                         <>
                           <Check
                             size={12}
-                            className="text-[#3A8F6A] stroke-[3]"
+                            className="text-lime stroke-[3]"
                           />
-                          <span className="text-[#3A8F6A]">
+                          <span className="text-lime">
                             Passwords match
                           </span>
                         </>
@@ -481,10 +481,10 @@ export default function AuthPage() {
 function Requirement({ ok, text }) {
   return (
     <div
-      className={`flex items-center gap-1.5 font-medium transition-colors ${ok ? "text-[#3A8F6A] font-bold" : "text-slate-500"}`}
+      className={`flex items-center gap-1.5 font-medium transition-colors ${ok ? "text-lime font-bold" : "text-slate-500"}`}
     >
       {ok ? (
-        <Check size={14} className="text-[#3A8F6A] shrink-0 stroke-[3]" />
+        <Check size={14} className="text-lime shrink-0 stroke-[3]" />
       ) : (
         <CircleDot size={10} className="text-slate-500 shrink-0" />
       )}

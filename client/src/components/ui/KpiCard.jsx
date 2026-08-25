@@ -22,7 +22,7 @@ export default function KpiCard({ label, value, icon: Icon, accent = '#2A8588', 
   const animated = useCountUp(value);
   return (
     <div
-      className="panel p-4 count-up flex flex-col gap-3 min-w-0 bg-white border border-hairline shadow-sm rounded-2xl"
+      className="panel p-4 count-up flex flex-col gap-3 min-w-0 bg-panel border border-hairline shadow-sm rounded-2xl"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center justify-between">
