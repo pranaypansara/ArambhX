@@ -14,7 +14,54 @@ import {
   ArrowRight,
   User,
   Briefcase,
+  ShieldCheck,
+  GraduationCap,
+  HeartHandshake,
+  Sparkles,
 } from "lucide-react";
+
+const DEMO_PASSWORD = "ArambhDemo!2026";
+
+// These accounts are created by server/src/scripts/seedDemoData.ts.
+// They are fictional demo identities intended for portfolio exploration only.
+const DEMO_ACCOUNTS = [
+  {
+    role: "ADMIN",
+    label: "Administrator",
+    icon: ShieldCheck,
+    description:
+      "System-wide oversight, student records, reports, audit logs and Student Data Sync.",
+    email: "admin@arambh.demo",
+    password: DEMO_PASSWORD,
+  },
+  {
+    role: "FACULTY",
+    label: "Faculty / Teacher",
+    icon: GraduationCap,
+    description:
+      "Student monitoring, risk insights, permitted management and Student Data Sync.",
+    email: "faculty@arambh.demo",
+    password: DEMO_PASSWORD,
+  },
+  {
+    role: "COUNSELOR",
+    label: "Counselor",
+    icon: HeartHandshake,
+    description:
+      "High-risk students, smart alerts, interventions and outcome tracking.",
+    email: "counselor@arambh.demo",
+    password: DEMO_PASSWORD,
+  },
+  {
+    role: "STUDENT",
+    label: "Student",
+    icon: User,
+    description:
+      "Own academic dashboard, permitted student details, alerts and support information.",
+    email: "student@arambh.demo",
+    password: DEMO_PASSWORD,
+  },
+];
 
 const PUBLIC_ROLES = [
   {
@@ -92,6 +139,17 @@ export default function AuthPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleUseDemoAccount = (account) => {
+    setActiveTab("login");
+    setLoginEmail(account.email);
+    setLoginPassword(account.password);
+    setShowLoginPassword(true);
+    toast.show(
+      `${account.label} demo credentials filled in. Review them and click Log In.`,
+      "info",
+    );
   };
 
   const handleRegisterSubmit = async (e) => {
@@ -257,6 +315,73 @@ export default function AuthPage() {
                 </button>
               </p>
             </form>
+          )}
+
+          {activeTab === "login" && (
+            <section
+              aria-labelledby="demo-accounts-heading"
+              className="border-t hairline pt-5 space-y-3"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-teal/40 bg-teal/5 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-teal">
+                  <Sparkles size={11} /> Demo
+                </span>
+                <h2
+                  id="demo-accounts-heading"
+                  className="text-sm font-extrabold text-ink"
+                >
+                  Explore ArambhX with Demo Accounts
+                </h2>
+              </div>
+              <p className="text-[11px] font-medium text-slate-500">
+                Demo accounts are provided for portfolio exploration.
+              </p>
+
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {DEMO_ACCOUNTS.map((account) => {
+                  const Icon = account.icon;
+                  return (
+                    <article
+                      key={account.role}
+                      className="space-y-2.5 rounded-2xl border border-hairline bg-panel-alt p-3.5"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--color-panel-active-border)] bg-[var(--color-panel-active)]">
+                          <Icon size={16} className="text-teal" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-extrabold text-ink">
+                            {account.label}
+                          </div>
+                          <div className="text-[10px] font-mono font-bold uppercase tracking-wide text-teal">
+                            {account.role} · DEMO
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] leading-relaxed text-slate-500">
+                        {account.description}
+                      </p>
+
+                      <dl className="grid grid-cols-[auto,1fr] gap-x-2 gap-y-1 font-mono text-[10px]">
+                        <dt className="font-bold text-slate-500">Email</dt>
+                        <dd className="break-all text-ink">{account.email}</dd>
+                        <dt className="font-bold text-slate-500">Password</dt>
+                        <dd className="break-all text-ink">{account.password}</dd>
+                      </dl>
+
+                      <button
+                        type="button"
+                        onClick={() => handleUseDemoAccount(account)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-teal/50 py-2 text-[11px] font-extrabold text-teal transition hover:bg-teal/10"
+                      >
+                        <UserCheck size={13} /> Use Demo Account
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           )}
 
           {activeTab === "register" && (
