@@ -12,31 +12,33 @@ GitHub Repository: https://github.com/pranaypansara/Smart-India-Hackathon
 
 The frontend is deployed on Vercel, the Express backend is deployed on Vercel, the FastAPI ML service is deployed on Render, and the database is hosted on Neon PostgreSQL.
 
-Production Demo Accounts
+Demo Credentials
 
-All demo accounts use the password:
+These fictional demo accounts are provided for portfolio exploration only. They use the existing seeded demo identities and demo data — no real user credentials are used.
+
+Shared password for every demo account:
 
 ArambhDemo!2026
 
-Role
+Administrator
+Username/email: admin@arambh.demo
 
-Email
+Faculty / Teacher
+Username/email: faculty@arambh.demo
 
-ADMIN
+Student
+Username/email: student@arambh.demo
 
-admin@arambh.demo
+Counselor (also seeded)
+Username/email: counselor@arambh.demo
 
-FACULTY
+How to use the demo accounts:
 
-faculty@arambh.demo
+1. Open https://arambhx.vercel.app/login
+2. On a role card, click "Use Demo Account". The email and password fields are populated for you.
+3. Review the filled credentials and click Log In. The demo button does not sign you in automatically.
 
-COUNSELOR
-
-counselor@arambh.demo
-
-STUDENT
-
-student@arambh.demo
+Do not use real user credentials or production secrets with the public demo.
 
 ARAMBHX is an AI-powered student dropout risk monitoring and intervention system. It helps institutions identify students who may be at risk, analyze their academic and engagement patterns, generate predictions using machine learning, and support staff in taking timely interventions.
 
